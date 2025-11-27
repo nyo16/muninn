@@ -1,0 +1,16 @@
+[package]
+name = "muninn"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "muninn"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.35.0"
+tantivy = "0.22"
+
+[profile.release]
+lto = true
+opt-level = 3
