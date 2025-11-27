@@ -57,13 +57,14 @@ defmodule Muninn.FuzzySearchTest do
       {:ok, searcher} = Searcher.new(reader)
 
       # With transposition=true, "elixer" should match "elixir" with distance=1
-      {:ok, results} = Searcher.search_fuzzy(
-        searcher,
-        "title",
-        "elixer",
-        distance: 1,
-        transposition: true
-      )
+      {:ok, results} =
+        Searcher.search_fuzzy(
+          searcher,
+          "title",
+          "elixer",
+          distance: 1,
+          transposition: true
+        )
 
       assert results["total_hits"] >= 1
     end
@@ -97,6 +98,7 @@ defmodule Muninn.FuzzySearchTest do
       for i <- 1..10 do
         IndexWriter.add_document(index, %{"text" => "test#{i}"})
       end
+
       IndexWriter.commit(index)
 
       {:ok, reader} = IndexReader.new(index)
@@ -134,23 +136,27 @@ defmodule Muninn.FuzzySearchTest do
 
       # "acbd" has one transposition (b and c swapped)
       # With transposition_cost_one=true, distance=1 should match
-      {:ok, results1} = Searcher.search_fuzzy(
-        searcher,
-        "word",
-        "acbd",
-        distance: 1,
-        transposition: true
-      )
+      {:ok, results1} =
+        Searcher.search_fuzzy(
+          searcher,
+          "word",
+          "acbd",
+          distance: 1,
+          transposition: true
+        )
+
       assert results1["total_hits"] >= 1
 
       # With transposition_cost_one=false, distance=1 won't match (needs 2: delete + insert)
-      {:ok, results2} = Searcher.search_fuzzy(
-        searcher,
-        "word",
-        "acbd",
-        distance: 1,
-        transposition: false
-      )
+      {:ok, results2} =
+        Searcher.search_fuzzy(
+          searcher,
+          "word",
+          "acbd",
+          distance: 1,
+          transposition: false
+        )
+
       assert results2["total_hits"] == 0
     end
   end
@@ -200,6 +206,7 @@ defmodule Muninn.FuzzySearchTest do
       for i <- 1..10 do
         IndexWriter.add_document(index, %{"name" => "test#{i}"})
       end
+
       IndexWriter.commit(index)
 
       {:ok, reader} = IndexReader.new(index)
@@ -224,18 +231,20 @@ defmodule Muninn.FuzzySearchTest do
         "title" => "Elixir Guide",
         "content" => "Learn Elixir programming with this comprehensive guide"
       })
+
       IndexWriter.commit(index)
 
       {:ok, reader} = IndexReader.new(index)
       {:ok, searcher} = Searcher.new(reader)
 
-      {:ok, results} = Searcher.search_fuzzy_with_snippets(
-        searcher,
-        "content",
-        "elixr",
-        ["content"],
-        distance: 1
-      )
+      {:ok, results} =
+        Searcher.search_fuzzy_with_snippets(
+          searcher,
+          "content",
+          "elixr",
+          ["content"],
+          distance: 1
+        )
 
       assert results["total_hits"] >= 1
       hit = List.first(results["hits"])
@@ -253,18 +262,20 @@ defmodule Muninn.FuzzySearchTest do
       IndexWriter.add_document(index, %{
         "content" => "This is a test about Elixir programming language"
       })
+
       IndexWriter.commit(index)
 
       {:ok, reader} = IndexReader.new(index)
       {:ok, searcher} = Searcher.new(reader)
 
-      {:ok, results} = Searcher.search_fuzzy_with_snippets(
-        searcher,
-        "content",
-        "elixr",
-        ["content"],
-        distance: 1
-      )
+      {:ok, results} =
+        Searcher.search_fuzzy_with_snippets(
+          searcher,
+          "content",
+          "elixr",
+          ["content"],
+          distance: 1
+        )
 
       assert results["total_hits"] >= 1
       hit = List.first(results["hits"])
@@ -324,9 +335,11 @@ defmodule Muninn.FuzzySearchTest do
 
       # Common programming terms
       terms = ["function", "variable", "programming", "database", "algorithm"]
+
       Enum.each(terms, fn term ->
         IndexWriter.add_document(index, %{"term" => term})
       end)
+
       IndexWriter.commit(index)
 
       {:ok, reader} = IndexReader.new(index)

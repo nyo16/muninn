@@ -27,8 +27,16 @@ defmodule Muninn.SearchIntegrationTest do
 
       # Add documents
       docs = [
-        %{"title" => "Introduction to Elixir", "body" => "Elixir is a functional language", "views" => 100},
-        %{"title" => "Advanced Elixir Patterns", "body" => "Mastering Elixir programming", "views" => 50},
+        %{
+          "title" => "Introduction to Elixir",
+          "body" => "Elixir is a functional language",
+          "views" => 100
+        },
+        %{
+          "title" => "Advanced Elixir Patterns",
+          "body" => "Mastering Elixir programming",
+          "views" => 50
+        },
         %{"title" => "Rust for Systems Programming", "body" => "Learn Rust basics", "views" => 75}
       ]
 
@@ -461,8 +469,16 @@ defmodule Muninn.SearchIntegrationTest do
       {:ok, index} = Index.create(test_path, schema)
 
       posts = [
-        %{"title" => "Getting Started with Elixir", "tags" => "elixir tutorial beginner", "views" => 1000},
-        %{"title" => "Advanced Elixir Techniques", "tags" => "elixir advanced patterns", "views" => 500},
+        %{
+          "title" => "Getting Started with Elixir",
+          "tags" => "elixir tutorial beginner",
+          "views" => 1000
+        },
+        %{
+          "title" => "Advanced Elixir Techniques",
+          "tags" => "elixir advanced patterns",
+          "views" => 500
+        },
         %{"title" => "Rust vs Go Comparison", "tags" => "rust go comparison", "views" => 750},
         %{"title" => "Building APIs with Elixir", "tags" => "elixir api phoenix", "views" => 800}
       ]
@@ -495,10 +511,30 @@ defmodule Muninn.SearchIntegrationTest do
       {:ok, index} = Index.create(test_path, schema)
 
       products = [
-        %{"name" => "laptop computer pro", "category" => "electronics", "price" => 1299.99, "in_stock" => true},
-        %{"name" => "laptop stand", "category" => "accessories", "price" => 49.99, "in_stock" => true},
-        %{"name" => "desktop computer", "category" => "electronics", "price" => 899.99, "in_stock" => false},
-        %{"name" => "wireless mouse", "category" => "accessories", "price" => 29.99, "in_stock" => true}
+        %{
+          "name" => "laptop computer pro",
+          "category" => "electronics",
+          "price" => 1299.99,
+          "in_stock" => true
+        },
+        %{
+          "name" => "laptop stand",
+          "category" => "accessories",
+          "price" => 49.99,
+          "in_stock" => true
+        },
+        %{
+          "name" => "desktop computer",
+          "category" => "electronics",
+          "price" => 899.99,
+          "in_stock" => false
+        },
+        %{
+          "name" => "wireless mouse",
+          "category" => "accessories",
+          "price" => 29.99,
+          "in_stock" => true
+        }
       ]
 
       Enum.each(products, &IndexWriter.add_document(index, &1))
