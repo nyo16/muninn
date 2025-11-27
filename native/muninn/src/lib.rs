@@ -1,3 +1,6 @@
+// Suppress warnings from rustler macro internals
+#![allow(unused_must_use, non_local_definitions)]
+
 mod atoms {
     rustler::atoms! {
         ok,
