@@ -26,4 +26,15 @@ defmodule Muninn.Native do
 
   @doc false
   def index_open(_path), do: :erlang.nif_error(:nif_not_loaded)
+
+  ## Writer functions
+
+  @doc false
+  def writer_add_document(_index, _document), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def writer_commit(_index), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def writer_rollback(_index), do: :erlang.nif_error(:nif_not_loaded)
 end
