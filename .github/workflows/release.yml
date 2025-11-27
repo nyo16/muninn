@@ -46,7 +46,7 @@ jobs:
       - name: Extract crate information
         shell: bash
         run: |
-          echo "PROJECT_VERSION=$(sed -n 's/^ *version: "\([^"]*\)".*/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
+          echo "PROJECT_VERSION=$(sed -n 's/.*@version "\([^"]*\)".*/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
       - name: Maybe add Rust flags for compilation
         shell: bash
