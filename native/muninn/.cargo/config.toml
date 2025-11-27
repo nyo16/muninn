@@ -1,0 +1,11 @@
+# Configuration for cross-compilation targets
+# See: https://github.com/rust-lang/rust/issues/59302
+
+# musl targets require -crt-static to build cdylib (dynamic libraries)
+# Without this, Rust drops cdylib support for musl targets
+
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
+
+[target.aarch64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=-crt-static"]
