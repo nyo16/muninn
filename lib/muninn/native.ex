@@ -6,7 +6,50 @@ defmodule Muninn.Native do
   All functions in this module are implemented in Rust using Rustler.
   """
 
-  use Rustler, otp_app: :muninn, crate: "muninn"
+  version = Mix.Project.config()[:version]
+  github_url = "https://github.com/nyo16/muninn"
+
+  # Determine build mode based on environment
+  mode = if Mix.env() in [:dev, :test], do: :debug, else: :release
+
+  # Legacy CPU detection function (defined at compile time)
+  legacy_cpu_check = fn ->
+    case :os.type() do
+      {:unix, _} ->
+        case System.cmd("grep", ["-q", "avx", "/proc/cpuinfo"], stderr_to_stdout: true) do
+          {_, 0} -> false
+          _ -> true
+        end
+
+      {:win32, _} ->
+        System.get_env("MUNINN_LEGACY_CPU") in ["1", "true"]
+
+      _ ->
+        false
+    end
+  end
+
+  use RustlerPrecompiled,
+    otp_app: :muninn,
+    crate: "muninn",
+    version: version,
+    base_url: "#{github_url}/releases/download/v#{version}",
+    targets: ~w(
+      aarch64-apple-darwin
+      aarch64-unknown-linux-gnu
+      aarch64-unknown-linux-musl
+      x86_64-apple-darwin
+      x86_64-unknown-linux-gnu
+      x86_64-unknown-linux-musl
+      x86_64-pc-windows-gnu
+    ),
+    variants: %{
+      "x86_64-unknown-linux-gnu" => [legacy_cpu: legacy_cpu_check],
+      "x86_64-pc-windows-gnu" => [legacy_cpu: legacy_cpu_check]
+    },
+    nif_versions: ["2.15", "2.16"],
+    mode: mode,
+    force_build: System.get_env("MUNINN_BUILD") in ["1", "true"]
 
   # When the NIF is loaded, it will replace these function implementations.
   # These are just stubs that will raise an error if the NIF fails to load.
