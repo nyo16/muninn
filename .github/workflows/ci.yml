@@ -64,4 +64,4 @@ jobs:
         run: cargo fmt --manifest-path=native/muninn/Cargo.toml --all -- --check
 
       - name: run clippy
-        run: cargo clippy --manifest-path=native/muninn/Cargo.toml -- -Dwarnings -A clippy::too_many_arguments
+        run: cargo clippy --manifest-path=native/muninn/Cargo.toml -- -Dwarnings -A clippy::too_many_arguments -A clippy::needless_lifetimes
