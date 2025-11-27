@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Rust dependencies (Tantivy NIFs in native/muninn)
+  - package-ecosystem: cargo
+    directory: "/native/muninn"
+    schedule:
+      interval: daily
+      time: "20:00"
+    open-pull-requests-limit: 10
+
+  # Elixir dependencies (mix.exs)
+  - package-ecosystem: mix
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "20:00"
+    open-pull-requests-limit: 10
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "20:00"
+    open-pull-requests-limit: 10
