@@ -15,7 +15,10 @@ pub struct IndexResource {
 }
 
 /// Creates a new index at the specified path with the given schema
-pub fn create_index(path: String, schema_def: SchemaDef) -> Result<ResourceArc<IndexResource>, String> {
+pub fn create_index(
+    path: String,
+    schema_def: SchemaDef,
+) -> Result<ResourceArc<IndexResource>, String> {
     // Build the schema first
     let schema = build_schema(schema_def)?;
 
@@ -38,8 +41,8 @@ pub fn create_index(path: String, schema_def: SchemaDef) -> Result<ResourceArc<I
 pub fn open_index(path: String) -> Result<ResourceArc<IndexResource>, String> {
     let index_path = Path::new(&path);
 
-    let index = Index::open_in_dir(index_path)
-        .map_err(|e| format!("Failed to open index: {}", e))?;
+    let index =
+        Index::open_in_dir(index_path).map_err(|e| format!("Failed to open index: {}", e))?;
 
     Ok(ResourceArc::new(IndexResource {
         index: Arc::new(Mutex::new(index)),

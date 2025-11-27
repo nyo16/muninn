@@ -13,15 +13,17 @@ mod atoms {
     }
 }
 
-mod schema;
 mod index;
-mod writer;
 mod reader;
+mod schema;
 mod searcher;
+mod writer;
 
 // NIF entry point
 #[rustler::nif]
-fn schema_build(schema_def: schema::SchemaDef) -> Result<rustler::ResourceArc<schema::SchemaResource>, rustler::Error> {
+fn schema_build(
+    schema_def: schema::SchemaDef,
+) -> Result<rustler::ResourceArc<schema::SchemaResource>, rustler::Error> {
     schema::schema_build(schema_def)
 }
 
@@ -31,7 +33,10 @@ fn schema_num_fields(schema: rustler::ResourceArc<schema::SchemaResource>) -> us
 }
 
 #[rustler::nif]
-fn index_create(path: String, schema_def: schema::SchemaDef) -> Result<rustler::ResourceArc<index::IndexResource>, String> {
+fn index_create(
+    path: String,
+    schema_def: schema::SchemaDef,
+) -> Result<rustler::ResourceArc<index::IndexResource>, String> {
     index::create_index(path, schema_def)
 }
 
@@ -59,12 +64,16 @@ fn writer_rollback(index: rustler::ResourceArc<index::IndexResource>) -> Result<
 }
 
 #[rustler::nif]
-fn reader_new(index: rustler::ResourceArc<index::IndexResource>) -> Result<rustler::ResourceArc<reader::ReaderResource>, String> {
+fn reader_new(
+    index: rustler::ResourceArc<index::IndexResource>,
+) -> Result<rustler::ResourceArc<reader::ReaderResource>, String> {
     reader::reader_new(index)
 }
 
 #[rustler::nif]
-fn searcher_new(reader: rustler::ResourceArc<reader::ReaderResource>) -> Result<rustler::ResourceArc<searcher::SearcherResource>, String> {
+fn searcher_new(
+    reader: rustler::ResourceArc<reader::ReaderResource>,
+) -> Result<rustler::ResourceArc<searcher::SearcherResource>, String> {
     searcher::searcher_new(reader)
 }
 
@@ -132,7 +141,16 @@ fn searcher_search_range_u64<'a>(
     upper_inclusive: bool,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
-    searcher::searcher_search_range_u64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
+    searcher::searcher_search_range_u64(
+        env,
+        searcher,
+        field_name,
+        lower,
+        upper,
+        lower_inclusive,
+        upper_inclusive,
+        limit,
+    )
 }
 
 #[rustler::nif]
@@ -146,7 +164,16 @@ fn searcher_search_range_i64<'a>(
     upper_inclusive: bool,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
-    searcher::searcher_search_range_i64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
+    searcher::searcher_search_range_i64(
+        env,
+        searcher,
+        field_name,
+        lower,
+        upper,
+        lower_inclusive,
+        upper_inclusive,
+        limit,
+    )
 }
 
 #[rustler::nif]
@@ -160,7 +187,16 @@ fn searcher_search_range_f64<'a>(
     upper_inclusive: bool,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
-    searcher::searcher_search_range_f64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
+    searcher::searcher_search_range_f64(
+        env,
+        searcher,
+        field_name,
+        lower,
+        upper,
+        lower_inclusive,
+        upper_inclusive,
+        limit,
+    )
 }
 
 #[rustler::nif]
@@ -173,7 +209,15 @@ fn searcher_search_fuzzy<'a>(
     transposition_cost_one: bool,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
-    searcher::searcher_search_fuzzy(env, searcher, field_name, term, distance, transposition_cost_one, limit)
+    searcher::searcher_search_fuzzy(
+        env,
+        searcher,
+        field_name,
+        term,
+        distance,
+        transposition_cost_one,
+        limit,
+    )
 }
 
 #[rustler::nif]
@@ -186,7 +230,15 @@ fn searcher_search_fuzzy_prefix<'a>(
     transposition_cost_one: bool,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
-    searcher::searcher_search_fuzzy_prefix(env, searcher, field_name, prefix, distance, transposition_cost_one, limit)
+    searcher::searcher_search_fuzzy_prefix(
+        env,
+        searcher,
+        field_name,
+        prefix,
+        distance,
+        transposition_cost_one,
+        limit,
+    )
 }
 
 #[rustler::nif]
@@ -201,7 +253,17 @@ fn searcher_search_fuzzy_with_snippets<'a>(
     max_snippet_chars: usize,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
-    searcher::searcher_search_fuzzy_with_snippets(env, searcher, field_name, term, snippet_fields, distance, transposition_cost_one, max_snippet_chars, limit)
+    searcher::searcher_search_fuzzy_with_snippets(
+        env,
+        searcher,
+        field_name,
+        term,
+        snippet_fields,
+        distance,
+        transposition_cost_one,
+        max_snippet_chars,
+        limit,
+    )
 }
 
 rustler::init!("Elixir.Muninn.Native", load = on_load);
