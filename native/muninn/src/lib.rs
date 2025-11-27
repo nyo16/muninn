@@ -75,6 +75,49 @@ fn searcher_search_term<'a>(
     searcher::searcher_search_term(env, searcher, query, limit)
 }
 
+#[rustler::nif]
+fn searcher_search_query<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_query(env, searcher, query_string, default_fields, limit)
+}
+
+#[rustler::nif]
+fn searcher_search_with_snippets<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+    snippet_fields: Vec<String>,
+    max_snippet_chars: usize,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_with_snippets(
+        env,
+        searcher,
+        query_string,
+        default_fields,
+        snippet_fields,
+        max_snippet_chars,
+        limit,
+    )
+}
+
+#[rustler::nif]
+fn searcher_search_prefix<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    prefix: String,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_prefix(env, searcher, field_name, prefix, limit)
+}
+
 rustler::init!("Elixir.Muninn.Native", load = on_load);
 
 fn on_load(env: rustler::Env, _info: rustler::Term) -> bool {

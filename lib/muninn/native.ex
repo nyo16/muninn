@@ -50,4 +50,23 @@ defmodule Muninn.Native do
 
   @doc false
   def searcher_search_term(_searcher, _query, _limit), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_query(_searcher, _query_string, _default_fields, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_with_snippets(
+        _searcher,
+        _query_string,
+        _default_fields,
+        _snippet_fields,
+        _max_snippet_chars,
+        _limit
+      ),
+      do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_prefix(_searcher, _field_name, _prefix, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
 end
