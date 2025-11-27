@@ -11,6 +11,7 @@ defmodule Muninn.MixProject do
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: aliases(),
       description: description(),
       package: package(),
       docs: docs(),
@@ -52,8 +53,7 @@ defmodule Muninn.MixProject do
   defp package do
     [
       name: "muninn",
-      files:
-        ~w(lib native/muninn/src native/muninn/Cargo.toml native/muninn/Cargo.lock native/muninn/.cargo .formatter.exs mix.exs README.md LICENSE CHANGELOG.md checksum-*.exs),
+      files: ~w(lib images .formatter.exs mix.exs README.md LICENSE CHANGELOG.md checksum-*.exs),
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url,
@@ -70,5 +70,15 @@ defmodule Muninn.MixProject do
       source_url: @source_url,
       extras: ["README.md", "LICENSE", "CHANGELOG.md"]
     ]
+  end
+
+  defp aliases do
+    [docs: ["docs", &copy_images/1]]
+  end
+
+  defp copy_images(_) do
+    File.mkdir_p!("doc/images")
+    File.cp!("images/header.png", "doc/images/header.png")
+    File.cp!("images/logo.png", "doc/images/logo.png")
   end
 end
