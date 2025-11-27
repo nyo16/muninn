@@ -21,3 +21,8 @@ muninn-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Compiled NIFs (native binaries)
+/priv/native/*.so
+/priv/native/*.dll
+/priv/native/*.dylib

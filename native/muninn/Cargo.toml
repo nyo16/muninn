@@ -8,9 +8,14 @@ name = "muninn"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustler = "0.35.0"
+rustler = "0.37.0"
 tantivy = "0.25"
 regex = "1.11"
+
+[features]
+default = ["nif_version_2_15"]
+nif_version_2_15 = ["rustler/nif_version_2_15"]
+nif_version_2_16 = ["rustler/nif_version_2_16"]
 
 [profile.release]
 lto = true

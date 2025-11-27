@@ -1,5 +1,5 @@
 use rustler::{Env, ResourceArc};
-use tantivy::schema::{Schema, SchemaBuilder, TextFieldIndexing, TextOptions, NumericOptions};
+use tantivy::schema::{NumericOptions, Schema, SchemaBuilder, TextFieldIndexing, TextOptions};
 
 /// Resource wrapper for Tantivy Schema
 pub struct SchemaResource {
@@ -28,7 +28,9 @@ pub fn build_schema(schema_def: SchemaDef) -> Result<Schema, String> {
                 if indexed {
                     let indexing = TextFieldIndexing::default()
                         .set_tokenizer("default")
-                        .set_index_option(tantivy::schema::IndexRecordOption::WithFreqsAndPositions);
+                        .set_index_option(
+                            tantivy::schema::IndexRecordOption::WithFreqsAndPositions,
+                        );
                     text_options = text_options.set_indexing_options(indexing);
                 }
 
@@ -77,11 +79,9 @@ pub fn build_schema(schema_def: SchemaDef) -> Result<Schema, String> {
 
 /// Builds a schema resource from definition
 pub fn schema_build(schema_def: SchemaDef) -> Result<ResourceArc<SchemaResource>, rustler::Error> {
-    let schema = build_schema(schema_def)
-        .map_err(|e| rustler::Error::Term(Box::new(e)))?;
+    let schema = build_schema(schema_def).map_err(|e| rustler::Error::Term(Box::new(e)))?;
     Ok(ResourceArc::new(SchemaResource { schema }))
 }
-
 
 pub fn load(env: Env) -> bool {
     rustler::resource!(SchemaResource, env);

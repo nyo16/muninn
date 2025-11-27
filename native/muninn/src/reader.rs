@@ -14,7 +14,9 @@ unsafe impl Sync for ReaderResource {}
 impl RefUnwindSafe for ReaderResource {}
 
 /// Creates a new IndexReader for the given index
-pub fn reader_new(index_res: ResourceArc<IndexResource>) -> Result<ResourceArc<ReaderResource>, String> {
+pub fn reader_new(
+    index_res: ResourceArc<IndexResource>,
+) -> Result<ResourceArc<ReaderResource>, String> {
     let index = index_res
         .index
         .lock()

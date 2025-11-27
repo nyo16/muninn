@@ -28,7 +28,9 @@ pub struct TermQueryDef {
 }
 
 /// Creates a new Searcher from an IndexReader
-pub fn searcher_new(reader_res: ResourceArc<ReaderResource>) -> Result<ResourceArc<SearcherResource>, String> {
+pub fn searcher_new(
+    reader_res: ResourceArc<ReaderResource>,
+) -> Result<ResourceArc<SearcherResource>, String> {
     let searcher = reader_res.reader.searcher();
 
     Ok(ResourceArc::new(SearcherResource { searcher }))
@@ -235,13 +237,8 @@ pub fn searcher_search_with_snippets<'a>(
             .doc(doc_address)
             .map_err(|e| format!("Failed to retrieve document: {}", e))?;
 
-        let hit_map = document_to_hit_map_with_snippets(
-            env,
-            &schema,
-            &doc,
-            score,
-            &snippet_generators,
-        );
+        let hit_map =
+            document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
         hits.push(hit_map);
     }
 
@@ -600,7 +597,8 @@ pub fn searcher_search_fuzzy_with_snippets<'a>(
             .doc(doc_address)
             .map_err(|e| format!("Failed to retrieve document: {}", e))?;
 
-        let hit_map = document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
+        let hit_map =
+            document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
         hits.push(hit_map);
     }
 
