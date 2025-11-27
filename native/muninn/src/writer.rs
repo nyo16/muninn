@@ -1,7 +1,7 @@
 use rustler::{Env, ResourceArc, Term};
 use std::collections::HashMap;
 use tantivy::schema::FieldType;
-use tantivy::{TantivyDocument, IndexWriter};
+use tantivy::TantivyDocument;
 
 use crate::index::IndexResource;
 

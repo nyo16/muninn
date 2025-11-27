@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::ops::Bound;
 use std::panic::RefUnwindSafe;
 use tantivy::collector::TopDocs;
-use tantivy::query::{BooleanQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
+use tantivy::query::{FuzzyTermQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
 use tantivy::schema::FieldType;
 use tantivy::snippet::SnippetGenerator;
 use tantivy::{Searcher, TantivyDocument, Term};
@@ -544,7 +544,7 @@ pub fn searcher_search_fuzzy_with_snippets<'a>(
     snippet_fields: Vec<String>,
     distance: u8,
     transposition_cost_one: bool,
-    max_snippet_chars: usize,
+    _max_snippet_chars: usize,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
     let searcher = &searcher_res.searcher;
