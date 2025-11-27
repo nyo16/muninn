@@ -4,6 +4,22 @@ A fast, full-text search engine for Elixir, powered by [Tantivy](https://github.
 
 Named after Odin's raven who gathers information from across the nine worlds.
 
+## Why "Muninn"?
+
+In Norse mythology, Odin—the Allfather—possessed two ravens named **Huginn** (thought) and **Muninn** (memory). Each dawn, they would fly across the Nine Realms, observing everything that transpired in the world. At dusk, they returned to perch upon Odin's shoulders and whisper all they had learned into his ears.
+
+Of the two, Odin feared more for Muninn:
+
+> *"Huginn and Muninn fly each day*
+> *over the spacious earth.*
+> *I fear for Huginn, that he come not back,*
+> *yet more anxious am I for Muninn."*
+> — Grímnismál, Poetic Edda
+
+Memory, after all, is what transforms raw observation into wisdom.
+
+This library embodies that spirit: it flies through your documents, indexes what it finds, and returns with perfect recall—no matter how vast your data grows. Fast, reliable, and always remembering.
+
 ## Features
 
 - **Fast**: Rust-powered search via native NIFs
@@ -25,7 +41,7 @@ Add `muninn` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:muninn, "~> 0.1.0"}
+    {:muninn, "~> 0.3.0"}
   ]
 end
 ```
