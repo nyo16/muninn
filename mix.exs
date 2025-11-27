@@ -23,7 +23,7 @@ defmodule Muninn.MixProject do
   defp deps do
     [
       # Production dependencies
-      {:rustler, "~> 0.35.0"},
+      {:rustler, "~> 0.37.1"},
       {:jason, "~> 1.4"},
 
       # Development dependencies
