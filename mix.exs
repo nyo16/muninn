@@ -52,7 +52,8 @@ defmodule Muninn.MixProject do
   defp package do
     [
       name: "muninn",
-      files: ~w(lib native .formatter.exs mix.exs README.md LICENSE checksum-*.exs),
+      files:
+        ~w(lib native/muninn/src native/muninn/Cargo.toml native/muninn/Cargo.lock native/muninn/.cargo .formatter.exs mix.exs README.md LICENSE CHANGELOG.md checksum-*.exs),
       licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url,
