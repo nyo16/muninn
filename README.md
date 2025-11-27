@@ -1,5 +1,8 @@
 # Muninn
 
+[![CI](https://github.com/nyo16/muninn/actions/workflows/ci.yml/badge.svg)](https://github.com/nyo16/muninn/actions/workflows/ci.yml)
+[![Precomp NIFs](https://github.com/nyo16/muninn/actions/workflows/release.yml/badge.svg)](https://github.com/nyo16/muninn/actions/workflows/release.yml)
+
 A fast, full-text search engine for Elixir, powered by [Tantivy](https://github.com/quickwit-oss/tantivy) (Rust).
 
 Named after Odin's raven who gathers information from across the nine worlds.
