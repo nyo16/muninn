@@ -5,7 +5,7 @@ defmodule Muninn.FuzzySearchTest do
 
   setup do
     test_path = "/tmp/muninn_fuzzy_#{:erlang.unique_integer([:positive])}"
-    on_exit(fn -> File.rm_rf!(test_path) end)
+    on_exit(fn -> Muninn.TestHelpers.safe_rm_rf(test_path) end)
     {:ok, test_path: test_path}
   end
 

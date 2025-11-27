@@ -8,7 +8,7 @@ defmodule Muninn.IntegrationTest do
     test_path = "/tmp/muninn_integration_#{:erlang.unique_integer([:positive])}"
 
     on_exit(fn ->
-      File.rm_rf!(test_path)
+      Muninn.TestHelpers.safe_rm_rf(test_path)
     end)
 
     {:ok, test_path: test_path}

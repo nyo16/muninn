@@ -8,11 +8,10 @@ on:
 
 jobs:
   mix_test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       MIX_ENV: test
       MUNINN_BUILD: "true"
-      ImageOS: ubuntu24
 
     name: Elixir ${{ matrix.pair.elixir }} / OTP ${{ matrix.pair.otp }}
 
@@ -43,6 +42,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.85.0
+          components: rustfmt, clippy
 
       - name: Install Dependencies
         run: mix deps.get
