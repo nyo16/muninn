@@ -67,7 +67,7 @@ defmodule Muninn.MixProject do
       main: "Muninn",
       source_ref: "v#{@version}",
       source_url: @source_url,
-      extras: ["README.md"]
+      extras: ["README.md", "LICENSE", "CHANGELOG.md"]
     ]
   end
 end
