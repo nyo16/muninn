@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Pre-commit hook to run mix format on staged Elixir files
+#
+# To install this hook, run:
+#   cp .githooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Or use: git config core.hooksPath .githooks
+
+echo "Running mix format on staged files..."
+
+# Get list of staged .ex and .exs files
+STAGED_EX_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.exs\?$')
+
+if [ -n "$STAGED_EX_FILES" ]; then
+  # Run mix format
+  mix format $STAGED_EX_FILES
+
+  # Add the formatted files back to staging
+  git add $STAGED_EX_FILES
+
+  echo "✓ Formatted $(echo "$STAGED_EX_FILES" | wc -l | tr -d ' ') Elixir file(s)"
+else
+  echo "✓ No Elixir files to format"
+fi
+
+exit 0

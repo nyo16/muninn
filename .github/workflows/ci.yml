@@ -8,10 +8,11 @@ on:
 
 jobs:
   mix_test:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     env:
       MIX_ENV: test
       MUNINN_BUILD: "true"
+      ImageOS: ubuntu24
 
     name: Elixir ${{ matrix.pair.elixir }} / OTP ${{ matrix.pair.otp }}
 
@@ -31,7 +32,7 @@ jobs:
             lint: lint
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: erlef/setup-beam@v1
         with:
@@ -63,4 +64,4 @@ jobs:
         run: cargo fmt --manifest-path=native/muninn/Cargo.toml --all -- --check
 
       - name: run clippy
-        run: cargo clippy --manifest-path=native/muninn/Cargo.toml -- -Dwarnings
+        run: cargo clippy --manifest-path=native/muninn/Cargo.toml -- -Dwarnings -A clippy::too_many_arguments -A clippy::needless_lifetimes

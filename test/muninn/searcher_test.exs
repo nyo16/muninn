@@ -229,7 +229,7 @@ defmodule Muninn.SearcherTest do
   end
 
   describe "Query.Term" do
-    test "creates term query struct", %{test_path: test_path} do
+    test "creates term query struct", %{test_path: _test_path} do
       query = Query.term("field", "value")
 
       assert query.__struct__ == Muninn.Query.Term

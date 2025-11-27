@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::ops::Bound;
 use std::panic::RefUnwindSafe;
 use tantivy::collector::TopDocs;
-use tantivy::query::{BooleanQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
+use tantivy::query::{FuzzyTermQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
 use tantivy::schema::FieldType;
 use tantivy::snippet::SnippetGenerator;
 use tantivy::{Searcher, TantivyDocument, Term};
@@ -28,7 +28,9 @@ pub struct TermQueryDef {
 }
 
 /// Creates a new Searcher from an IndexReader
-pub fn searcher_new(reader_res: ResourceArc<ReaderResource>) -> Result<ResourceArc<SearcherResource>, String> {
+pub fn searcher_new(
+    reader_res: ResourceArc<ReaderResource>,
+) -> Result<ResourceArc<SearcherResource>, String> {
     let searcher = reader_res.reader.searcher();
 
     Ok(ResourceArc::new(SearcherResource { searcher }))
@@ -235,13 +237,8 @@ pub fn searcher_search_with_snippets<'a>(
             .doc(doc_address)
             .map_err(|e| format!("Failed to retrieve document: {}", e))?;
 
-        let hit_map = document_to_hit_map_with_snippets(
-            env,
-            &schema,
-            &doc,
-            score,
-            &snippet_generators,
-        );
+        let hit_map =
+            document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
         hits.push(hit_map);
     }
 
@@ -544,7 +541,7 @@ pub fn searcher_search_fuzzy_with_snippets<'a>(
     snippet_fields: Vec<String>,
     distance: u8,
     transposition_cost_one: bool,
-    max_snippet_chars: usize,
+    _max_snippet_chars: usize,
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
     let searcher = &searcher_res.searcher;
@@ -600,7 +597,8 @@ pub fn searcher_search_fuzzy_with_snippets<'a>(
             .doc(doc_address)
             .map_err(|e| format!("Failed to retrieve document: {}", e))?;
 
-        let hit_map = document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
+        let hit_map =
+            document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
         hits.push(hit_map);
     }
 
