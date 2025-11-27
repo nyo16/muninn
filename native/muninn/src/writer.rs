@@ -73,10 +73,21 @@ pub fn writer_add_document(
         }
     }
 
-    // Get or create the index writer
-    let writer: IndexWriter<TantivyDocument> = index
-        .writer(50_000_000)
-        .map_err(|e| format!("Failed to create writer: {}", e))?;
+    // Get or create the persistent writer
+    let mut writer_lock = index_res
+        .writer
+        .lock()
+        .map_err(|_| "Failed to acquire writer lock".to_string())?;
+
+    // Initialize writer if it doesn't exist
+    if writer_lock.is_none() {
+        let new_writer = index
+            .writer(50_000_000)
+            .map_err(|e| format!("Failed to create writer: {}", e))?;
+        *writer_lock = Some(new_writer);
+    }
+
+    let writer = writer_lock.as_mut().unwrap();
 
     writer
         .add_document(tantivy_doc)
@@ -87,36 +98,32 @@ pub fn writer_add_document(
 
 /// Commits all pending changes to the index
 pub fn writer_commit(index_res: ResourceArc<IndexResource>) -> Result<(), String> {
-    let index = index_res
-        .index
+    let mut writer_lock = index_res
+        .writer
         .lock()
-        .map_err(|_| "Failed to acquire index lock".to_string())?;
+        .map_err(|_| "Failed to acquire writer lock".to_string())?;
 
-    let mut writer: IndexWriter<TantivyDocument> = index
-        .writer(50_000_000)
-        .map_err(|e| format!("Failed to create writer: {}", e))?;
-
-    writer
-        .commit()
-        .map_err(|e| format!("Failed to commit: {}", e))?;
+    if let Some(writer) = writer_lock.as_mut() {
+        writer
+            .commit()
+            .map_err(|e| format!("Failed to commit: {}", e))?;
+    }
 
     Ok(())
 }
 
 /// Rolls back all uncommitted changes
 pub fn writer_rollback(index_res: ResourceArc<IndexResource>) -> Result<(), String> {
-    let index = index_res
-        .index
+    let mut writer_lock = index_res
+        .writer
         .lock()
-        .map_err(|_| "Failed to acquire index lock".to_string())?;
+        .map_err(|_| "Failed to acquire writer lock".to_string())?;
 
-    let mut writer: IndexWriter<TantivyDocument> = index
-        .writer(50_000_000)
-        .map_err(|e| format!("Failed to create writer: {}", e))?;
-
-    writer
-        .rollback()
-        .map_err(|e| format!("Failed to rollback: {}", e))?;
+    if let Some(writer) = writer_lock.as_mut() {
+        writer
+            .rollback()
+            .map_err(|e| format!("Failed to rollback: {}", e))?;
+    }
 
     Ok(())
 }

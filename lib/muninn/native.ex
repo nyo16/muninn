@@ -37,4 +37,17 @@ defmodule Muninn.Native do
 
   @doc false
   def writer_rollback(_index), do: :erlang.nif_error(:nif_not_loaded)
+
+  ## Reader functions
+
+  @doc false
+  def reader_new(_index), do: :erlang.nif_error(:nif_not_loaded)
+
+  ## Searcher functions
+
+  @doc false
+  def searcher_new(_reader), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_term(_searcher, _query, _limit), do: :erlang.nif_error(:nif_not_loaded)
 end
