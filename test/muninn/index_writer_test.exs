@@ -7,7 +7,10 @@ defmodule Muninn.IndexWriterTest do
     test_path = "/tmp/muninn_writer_#{:erlang.unique_integer([:positive])}"
 
     on_exit(fn ->
-      File.rm_rf!(test_path)
+      # Small delay to ensure resources are released
+      Process.sleep(10)
+      # Use non-raising version to avoid test failures on cleanup
+      File.rm_rf(test_path)
     end)
 
     {:ok, test_path: test_path}

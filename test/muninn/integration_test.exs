@@ -63,8 +63,8 @@ defmodule Muninn.IntegrationTest do
       end)
 
       # Create two different indexes
-      assert {:ok, index1} = Index.create(path1, schema1)
-      assert {:ok, index2} = Index.create(path2, schema2)
+      assert {:ok, _index1} = Index.create(path1, schema1)
+      assert {:ok, _index2} = Index.create(path2, schema2)
 
       # Both should exist
       assert File.exists?(path1)

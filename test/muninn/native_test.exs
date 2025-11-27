@@ -1,7 +1,7 @@
 defmodule Muninn.NativeTest do
   use ExUnit.Case, async: true
 
-  alias Muninn.{Native, Schema}
+  alias Muninn.Native
 
   describe "schema_build/1" do
     test "builds a schema from field list" do
