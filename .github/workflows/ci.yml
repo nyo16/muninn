@@ -1,85 +1,63 @@
 name: CI
-on: [push, pull_request]
-permissions:
-  contents: write
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
-  report_mix_deps:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: erlef/mix-dependency-submission@v1
-
   mix_test:
-    name: mix test (OTP ${{matrix.otp}} | Elixir ${{matrix.elixir}})
-
+    runs-on: ubuntu-24.04
     env:
       MIX_ENV: test
-      MUNINN_BUILD: true
+      MUNINN_BUILD: "true"
+
+    name: Elixir ${{ matrix.pair.elixir }} / OTP ${{ matrix.pair.otp }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - elixir: 1.17.3
-            otp: 26.2.5.4
-
-          - elixir: 1.18.3
-            otp: 27.2
-            lint: true
-
-    runs-on: ubuntu-24.04
+          - pair:
+              elixir: 1.18.4
+              otp: "26.2"
+          - pair:
+              elixir: 1.18.4
+              otp: "27.3"
+            lint: lint
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Elixir
-        uses: erlef/setup-beam@v1
+      - uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir }}
-          otp-version: ${{ matrix.otp }}
+          otp-version: ${{ matrix.pair.otp }}
+          elixir-version: ${{ matrix.pair.elixir }}
 
-      - name: Set up Rust
+      - name: Install minimal stable Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.85.0
 
-      - name: Cache Rust dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            native/muninn/target
-          key: rust-${{ runner.os }}-${{ hashFiles('native/muninn/Cargo.lock') }}
-          restore-keys: |
-            rust-${{ runner.os }}-
-
-      - name: Install Rust build dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libclang-dev build-essential pkg-config
-
-      - name: Restore deps and _build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            deps
-            _build
-          key: deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            deps-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}
-
-      - name: Install dependencies
+      - name: Install Dependencies
         run: mix deps.get
 
-      - name: Remove compiled application files
-        run: mix clean
-
-      - name: Compile & lint dependencies
-        run: mix compile --warnings-as-errors
+      - run: mix format --check-formatted
         if: ${{ matrix.lint }}
 
-      - name: Run tests
-        run: mix test --max-failures 10 --timeout 300000
+      - run: mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+
+      - run: mix deps.compile
+
+      - run: mix compile --warnings-as-errors
+        if: ${{ matrix.lint }}
+
+      - run: mix test
+
+      - name: run rustfmt
+        run: cargo fmt --manifest-path=native/muninn/Cargo.toml --all -- --check
+
+      - name: run clippy
+        run: cargo clippy --manifest-path=native/muninn/Cargo.toml -- -Dwarnings
