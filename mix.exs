@@ -53,7 +53,7 @@ defmodule Muninn.MixProject do
     [
       name: "muninn",
       files: ~w(lib native .formatter.exs mix.exs README.md LICENSE checksum-*.exs),
-      licenses: ["MIT"],
+      licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @source_url,
         "Changelog" => "#{@source_url}/blob/master/CHANGELOG.md"

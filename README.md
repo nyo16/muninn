@@ -44,7 +44,7 @@ Add `muninn` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:muninn, "~> 0.3.0"}
+    {:muninn, "~> 0.4.0"}
   ]
 end
 ```
@@ -426,7 +426,6 @@ mix docs
 
 View at `doc/index.html`
 
-For detailed feature comparison and use cases, see [SEARCH_FEATURES.md](SEARCH_FEATURES.md).
 
 ## Development Status
 
@@ -454,7 +453,7 @@ For detailed feature comparison and use cases, see [SEARCH_FEATURES.md](SEARCH_F
 
 ## License
 
-MIT
+Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Credits
 
