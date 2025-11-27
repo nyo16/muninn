@@ -10,7 +10,8 @@ Named after Odin's raven who gathers information from across the nine worlds.
 - **Full-text search**: Text indexing with customizable tokenization
 - **Multiple field types**: text, u64, i64, f64, bool
 - **Flexible schemas**: Define stored and indexed fields
-- **Advanced queries**: Field-specific search, boolean operators, phrase matching
+- **Advanced queries**: Field-specific search, boolean operators, phrase matching, range queries
+- **Range queries**: Numeric range filtering with flexible boundaries
 - **Highlighting**: HTML snippets with highlighted matching words
 - **Autocomplete**: Prefix search for typeahead functionality
 - **Thread-safe**: Concurrent index operations supported
@@ -30,7 +31,7 @@ end
 
 **Requirements:**
 - Elixir ~> 1.18
-- Rust ~> 1.70 (for compilation)
+- Rust ~> 1.85 (for compilation, Tantivy 0.25 requires Edition 2024)
 
 ## Quick Start
 
@@ -101,6 +102,22 @@ alias Muninn.{IndexReader, Searcher}
   "eli",
   limit: 10
 )
+
+# Range queries
+{:ok, results} = Searcher.search_query(
+  searcher,
+  "views:[1000 TO 5000]",
+  ["title"]
+)
+
+# Programmatic range queries
+{:ok, results} = Searcher.search_range_u64(
+  searcher,
+  "views",
+  1000,
+  5000,
+  inclusive: :both
+)
 ```
 
 ## Search Features
@@ -114,6 +131,8 @@ alias Muninn.{IndexReader, Searcher}
 - **Required terms**: `+elixir phoenix` elixir is required, phoenix optional
 - **Excluded terms**: `elixir -draft` include elixir, exclude draft
 - **Grouping**: `(elixir OR rust) AND tutorial` complex nested queries
+- **Range queries**: `views:[100 TO 1000]` numeric range (u64, i64, f64)
+- **Open-ended ranges**: `price:[50.0 TO *]` unbounded upper limit
 - **Case-insensitive**: All searches are case-insensitive
 
 ### Highlighted Snippets
@@ -144,6 +163,36 @@ Perfect for search-as-you-type functionality:
 # Matches: "Phoenix Framework", "Photography", "Photoshop", etc.
 ```
 
+### Range Queries
+
+Filter numeric fields with flexible boundary control:
+
+```elixir
+# QueryParser syntax - inclusive range [100, 1000]
+{:ok, results} = Searcher.search_query(searcher, "views:[100 TO 1000]", ["title"])
+
+# Programmatic API with boundary control
+{:ok, results} = Searcher.search_range_u64(
+  searcher,
+  "views",
+  100,
+  1000,
+  inclusive: :both    # :both, :lower, :upper, :neither
+)
+
+# Range queries work for all numeric types
+Searcher.search_range_u64(searcher, "views", 0, 1000)        # Unsigned integers
+Searcher.search_range_i64(searcher, "temperature", -10, 30)  # Signed integers
+Searcher.search_range_f64(searcher, "price", 9.99, 99.99)    # Floating point
+
+# Combine with text search
+{:ok, results} = Searcher.search_query(
+  searcher,
+  "title:elixir AND views:[1000 TO *]",
+  ["title"]
+)
+```
+
 ## Field Types
 
 | Type | Description | Example Use Case |
@@ -167,6 +216,7 @@ See the `examples/` directory for complete working examples:
 - `search_demo.exs` - Basic term search demonstration
 - `advanced_search_demo.exs` - Query parser with boolean operators
 - `highlighting_demo.exs` - Highlighted snippets and prefix search
+- `range_functions_demo.exs` - Range queries (QueryParser vs dedicated functions)
 - `complete_search_demo.exs` - Full feature showcase
 - `comparison_demo.exs` - Side-by-side comparison of search methods
 
@@ -209,6 +259,13 @@ Searcher.search_with_snippets(searcher, query, search_fields, snippet_fields, op
 Searcher.search_prefix(searcher, "field", "prefix", limit: 10)
 ```
 
+**Range Queries** - Numeric filtering with flexible boundaries:
+```elixir
+Searcher.search_range_u64(searcher, "views", 100, 1000, inclusive: :both)
+Searcher.search_range_i64(searcher, "temperature", -10, 30)
+Searcher.search_range_f64(searcher, "price", 10.0, 100.0)
+```
+
 ## Architecture
 
 ```
@@ -247,10 +304,11 @@ mix test --cover
 mix test test/muninn/searcher_test.exs
 ```
 
-**Test Coverage:** 165+ tests covering:
+**Test Coverage:** 158 tests covering:
 - Schema and index operations
 - Document CRUD operations
-- All query types (term, boolean, phrase, prefix)
+- All query types (term, boolean, phrase, prefix, range)
+- Range queries with different numeric types and boundary options
 - Snippet generation and highlighting
 - Concurrent operations
 - Edge cases and error handling
@@ -269,23 +327,25 @@ For detailed feature comparison and use cases, see [SEARCH_FEATURES.md](SEARCH_F
 
 ## Development Status
 
-**Current:** Phase 5 Complete - Advanced Search Features
+**Current:** Phase 6 Complete - Range Queries & Tantivy 0.25 Upgrade
 
 **Implemented:**
 - Schema definition and validation
 - Index creation and management
 - Document indexing with batch operations
 - Basic term search
-- Advanced query parser (field:value, AND/OR, phrases)
+- Advanced query parser (field:value, AND/OR, phrases, ranges)
+- Range queries for all numeric types (u64, i64, f64)
 - Highlighted snippets for search results
 - Prefix search for autocomplete
 - Transaction support (commit/rollback)
+- Upgraded to Tantivy 0.25
 
 **Roadmap:**
-- Range queries for numeric fields
 - Faceted search and aggregations
 - Fuzzy matching and suggestions
 - Custom analyzers and tokenizers
+- Sorting and custom scoring
 
 ## License
 

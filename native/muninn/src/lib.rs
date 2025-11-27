@@ -118,6 +118,48 @@ fn searcher_search_prefix<'a>(
     searcher::searcher_search_prefix(env, searcher, field_name, prefix, limit)
 }
 
+#[rustler::nif]
+fn searcher_search_range_u64<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    lower: u64,
+    upper: u64,
+    lower_inclusive: bool,
+    upper_inclusive: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_range_u64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
+}
+
+#[rustler::nif]
+fn searcher_search_range_i64<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    lower: i64,
+    upper: i64,
+    lower_inclusive: bool,
+    upper_inclusive: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_range_i64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
+}
+
+#[rustler::nif]
+fn searcher_search_range_f64<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    lower: f64,
+    upper: f64,
+    lower_inclusive: bool,
+    upper_inclusive: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_range_f64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
+}
+
 rustler::init!("Elixir.Muninn.Native", load = on_load);
 
 fn on_load(env: rustler::Env, _info: rustler::Term) -> bool {

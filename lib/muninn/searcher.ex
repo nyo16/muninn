@@ -314,4 +314,184 @@ defmodule Muninn.Searcher do
 
     Native.searcher_search_prefix(searcher, field_name, prefix, limit)
   end
+
+  @doc """
+  Performs a range query on a u64 field.
+
+  Searches for documents where the field value falls within the specified range.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `field_name` - The u64 field name to search
+    * `lower` - Lower bound value
+    * `upper` - Upper bound value
+    * `opts` - Keyword list of options:
+      - `:limit` - Maximum number of results (default: 10)
+      - `:inclusive` - Bound inclusivity (default: :both)
+        - `:both` - Include both bounds [lower, upper]
+        - `:lower` - Include lower only [lower, upper)
+        - `:upper` - Include upper only (lower, upper]
+        - `:neither` - Exclude both (lower, upper)
+
+  ## Returns
+
+    * `{:ok, results}` - Search results
+    * `{:error, reason}` - Search failed
+
+  ## Examples
+
+      # Find products with 100-1000 views (inclusive)
+      {:ok, results} = Searcher.search_range_u64(
+        searcher,
+        "views",
+        100,
+        1000,
+        inclusive: :both
+      )
+
+      # Find items with price 10-99 (excluding 10 and 99)
+      {:ok, results} = Searcher.search_range_u64(
+        searcher,
+        "price",
+        10,
+        99,
+        inclusive: :neither
+      )
+
+  """
+  @spec search_range_u64(t(), String.t(), non_neg_integer(), non_neg_integer(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_range_u64(searcher, field_name, lower, upper, opts \\ [])
+      when is_binary(field_name) and is_integer(lower) and is_integer(upper) do
+    limit = Keyword.get(opts, :limit, 10)
+    inclusive = Keyword.get(opts, :inclusive, :both)
+
+    {lower_inclusive, upper_inclusive} =
+      case inclusive do
+        :both -> {true, true}
+        :lower -> {true, false}
+        :upper -> {false, true}
+        :neither -> {false, false}
+      end
+
+    Native.searcher_search_range_u64(
+      searcher,
+      field_name,
+      lower,
+      upper,
+      lower_inclusive,
+      upper_inclusive,
+      limit
+    )
+  end
+
+  @doc """
+  Performs a range query on an i64 field.
+
+  Searches for documents where the field value falls within the specified range.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `field_name` - The i64 field name to search
+    * `lower` - Lower bound value
+    * `upper` - Upper bound value
+    * `opts` - Keyword list of options (see `search_range_u64/5`)
+
+  ## Examples
+
+      # Find temperatures between -10 and 30 degrees
+      {:ok, results} = Searcher.search_range_i64(
+        searcher,
+        "temperature",
+        -10,
+        30
+      )
+
+  """
+  @spec search_range_i64(t(), String.t(), integer(), integer(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_range_i64(searcher, field_name, lower, upper, opts \\ [])
+      when is_binary(field_name) and is_integer(lower) and is_integer(upper) do
+    limit = Keyword.get(opts, :limit, 10)
+    inclusive = Keyword.get(opts, :inclusive, :both)
+
+    {lower_inclusive, upper_inclusive} =
+      case inclusive do
+        :both -> {true, true}
+        :lower -> {true, false}
+        :upper -> {false, true}
+        :neither -> {false, false}
+      end
+
+    Native.searcher_search_range_i64(
+      searcher,
+      field_name,
+      lower,
+      upper,
+      lower_inclusive,
+      upper_inclusive,
+      limit
+    )
+  end
+
+  @doc """
+  Performs a range query on an f64 field.
+
+  Searches for documents where the field value falls within the specified range.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `field_name` - The f64 field name to search
+    * `lower` - Lower bound value
+    * `upper` - Upper bound value
+    * `opts` - Keyword list of options (see `search_range_u64/5`)
+
+  ## Examples
+
+      # Find products priced between $10.00 and $50.00
+      {:ok, results} = Searcher.search_range_f64(
+        searcher,
+        "price",
+        10.0,
+        50.0
+      )
+
+      # Find ratings 4.0 and above (excluding exactly 5.0)
+      {:ok, results} = Searcher.search_range_f64(
+        searcher,
+        "rating",
+        4.0,
+        5.0,
+        inclusive: :lower
+      )
+
+  """
+  @spec search_range_f64(t(), String.t(), float(), float(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_range_f64(searcher, field_name, lower, upper, opts \\ [])
+      when is_binary(field_name) and is_float(lower) and is_float(upper) do
+    limit = Keyword.get(opts, :limit, 10)
+    inclusive = Keyword.get(opts, :inclusive, :both)
+
+    {lower_inclusive, upper_inclusive} =
+      case inclusive do
+        :both -> {true, true}
+        :lower -> {true, false}
+        :upper -> {false, true}
+        :neither -> {false, false}
+      end
+
+    Native.searcher_search_range_f64(
+      searcher,
+      field_name,
+      lower,
+      upper,
+      lower_inclusive,
+      upper_inclusive,
+      limit
+    )
+  end
 end

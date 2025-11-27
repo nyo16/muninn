@@ -69,4 +69,16 @@ defmodule Muninn.Native do
   @doc false
   def searcher_search_prefix(_searcher, _field_name, _prefix, _limit),
     do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_range_u64(_searcher, _field_name, _lower, _upper, _lower_inclusive, _upper_inclusive, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_range_i64(_searcher, _field_name, _lower, _upper, _lower_inclusive, _upper_inclusive, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_range_f64(_searcher, _field_name, _lower, _upper, _lower_inclusive, _upper_inclusive, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

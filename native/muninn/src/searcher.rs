@@ -1,11 +1,12 @@
 use rustler::{Env, ResourceArc};
 use std::collections::HashMap;
+use std::ops::Bound;
 use std::panic::RefUnwindSafe;
 use tantivy::collector::TopDocs;
-use tantivy::query::{BooleanQuery, Occur, PhraseQuery, Query, QueryParser, RegexQuery, TermQuery};
+use tantivy::query::{BooleanQuery, Occur, PhraseQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
 use tantivy::schema::FieldType;
 use tantivy::snippet::SnippetGenerator;
-use tantivy::{Searcher, TantivyDocument};
+use tantivy::{Searcher, TantivyDocument, Term};
 
 use crate::reader::ReaderResource;
 
@@ -333,6 +334,165 @@ pub fn searcher_search_prefix<'a>(
     Ok(result_map)
 }
 
+/// Performs a range query on a u64 field
+pub fn searcher_search_range_u64<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    lower: u64,
+    upper: u64,
+    lower_inclusive: bool,
+    upper_inclusive: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    // Check field type
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::U64(_)) {
+        return Err(format!("Field '{}' is not a u64 field", field_name));
+    }
+
+    let lower_bound = if lower_inclusive {
+        Bound::Included(Term::from_field_u64(field, lower))
+    } else {
+        Bound::Excluded(Term::from_field_u64(field, lower))
+    };
+
+    let upper_bound = if upper_inclusive {
+        Bound::Included(Term::from_field_u64(field, upper))
+    } else {
+        Bound::Excluded(Term::from_field_u64(field, upper))
+    };
+
+    let range_query = RangeQuery::new(lower_bound, upper_bound);
+
+    execute_query(env, searcher, &schema, &range_query, limit)
+}
+
+/// Performs a range query on an i64 field
+pub fn searcher_search_range_i64<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    lower: i64,
+    upper: i64,
+    lower_inclusive: bool,
+    upper_inclusive: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::I64(_)) {
+        return Err(format!("Field '{}' is not an i64 field", field_name));
+    }
+
+    let lower_bound = if lower_inclusive {
+        Bound::Included(Term::from_field_i64(field, lower))
+    } else {
+        Bound::Excluded(Term::from_field_i64(field, lower))
+    };
+
+    let upper_bound = if upper_inclusive {
+        Bound::Included(Term::from_field_i64(field, upper))
+    } else {
+        Bound::Excluded(Term::from_field_i64(field, upper))
+    };
+
+    let range_query = RangeQuery::new(lower_bound, upper_bound);
+
+    execute_query(env, searcher, &schema, &range_query, limit)
+}
+
+/// Performs a range query on an f64 field
+pub fn searcher_search_range_f64<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    lower: f64,
+    upper: f64,
+    lower_inclusive: bool,
+    upper_inclusive: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::F64(_)) {
+        return Err(format!("Field '{}' is not an f64 field", field_name));
+    }
+
+    let lower_bound = if lower_inclusive {
+        Bound::Included(Term::from_field_f64(field, lower))
+    } else {
+        Bound::Excluded(Term::from_field_f64(field, lower))
+    };
+
+    let upper_bound = if upper_inclusive {
+        Bound::Included(Term::from_field_f64(field, upper))
+    } else {
+        Bound::Excluded(Term::from_field_f64(field, upper))
+    };
+
+    let range_query = RangeQuery::new(lower_bound, upper_bound);
+
+    execute_query(env, searcher, &schema, &range_query, limit)
+}
+
+/// Helper function to execute a query and return results
+fn execute_query<'a>(
+    env: rustler::Env<'a>,
+    searcher: &Searcher,
+    schema: &tantivy::schema::Schema,
+    query: &dyn Query,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let top_docs = searcher
+        .search(query, &TopDocs::with_limit(limit))
+        .map_err(|e| format!("Search failed: {}", e))?;
+
+    let total_hits = top_docs.len();
+    let mut hits = Vec::new();
+
+    for (score, doc_address) in top_docs {
+        let doc: TantivyDocument = searcher
+            .doc(doc_address)
+            .map_err(|e| format!("Failed to retrieve document: {}", e))?;
+
+        let hit_map = document_to_hit_map(env, schema, &doc, score);
+        hits.push(hit_map);
+    }
+
+    use rustler::types::map;
+    use rustler::Encoder;
+
+    let result_map = map::map_new(env)
+        .map_put("total_hits".encode(env), total_hits.encode(env))
+        .ok()
+        .unwrap()
+        .map_put("hits".encode(env), hits.encode(env))
+        .ok()
+        .unwrap();
+
+    Ok(result_map)
+}
+
 /// Converts a Tantivy document to an Elixir hit map with score
 fn document_to_hit_map<'a>(
     env: rustler::Env<'a>,
@@ -352,7 +512,9 @@ fn document_to_hit_map<'a>(
 
         // Take the first value (for now, we don't support multi-valued fields)
         if let Some(value) = values.first() {
-            match value {
+            // Convert CompactDocValue to OwnedValue
+            let owned_value: tantivy::schema::OwnedValue = (*value).into();
+            match owned_value {
                 tantivy::schema::OwnedValue::Str(s) => {
                     doc_fields.insert(field_name, s.as_str().encode(env));
                 }
@@ -406,7 +568,9 @@ fn document_to_hit_map_with_snippets<'a>(
 
         // Take the first value (for now, we don't support multi-valued fields)
         if let Some(value) = values.first() {
-            match value {
+            // Convert CompactDocValue to OwnedValue
+            let owned_value: tantivy::schema::OwnedValue = (*value).into();
+            match owned_value {
                 tantivy::schema::OwnedValue::Str(s) => {
                     doc_fields.insert(field_name, s.as_str().encode(env));
                 }
