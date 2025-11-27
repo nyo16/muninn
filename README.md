@@ -12,10 +12,11 @@ Named after Odin's raven who gathers information from across the nine worlds.
 - **Flexible schemas**: Define stored and indexed fields
 - **Advanced queries**: Field-specific search, boolean operators, phrase matching, range queries
 - **Range queries**: Numeric range filtering with flexible boundaries
+- **Fuzzy matching**: Error-tolerant search with Levenshtein distance for handling typos
 - **Highlighting**: HTML snippets with highlighted matching words
-- **Autocomplete**: Prefix search for typeahead functionality
+- **Autocomplete**: Prefix search for typeahead functionality (with fuzzy support)
 - **Thread-safe**: Concurrent index operations supported
-- **Production-ready**: Comprehensive error handling and 165+ tests
+- **Production-ready**: Comprehensive error handling and 175+ tests
 
 ## Installation
 
@@ -118,6 +119,23 @@ alias Muninn.{IndexReader, Searcher}
   5000,
   inclusive: :both
 )
+
+# Fuzzy search (handles typos)
+{:ok, results} = Searcher.search_fuzzy(
+  searcher,
+  "title",
+  "elixr",  # Typo for "elixir"
+  distance: 1
+)
+
+# Fuzzy prefix (autocomplete with typo tolerance)
+{:ok, results} = Searcher.search_fuzzy_prefix(
+  searcher,
+  "author",
+  "jse",  # Typo while typing "jose"
+  distance: 1,
+  limit: 10
+)
 ```
 
 ## Search Features
@@ -193,6 +211,61 @@ Searcher.search_range_f64(searcher, "price", 9.99, 99.99)    # Floating point
 )
 ```
 
+### Fuzzy Search (Typo Tolerance)
+
+Handle spelling errors and typos automatically using Levenshtein distance:
+
+```elixir
+# Basic fuzzy search (distance=1: one character difference)
+{:ok, results} = Searcher.search_fuzzy(
+  searcher,
+  "title",
+  "elixr",  # Typo for "elixir"
+  distance: 1
+)
+
+# More tolerant search (distance=2: two character differences)
+{:ok, results} = Searcher.search_fuzzy(
+  searcher,
+  "content",
+  "phoneix",  # Typo for "phoenix"
+  distance: 2
+)
+
+# Fuzzy prefix search (autocomplete with typo tolerance)
+{:ok, results} = Searcher.search_fuzzy_prefix(
+  searcher,
+  "author",
+  "jse",  # User typing "jose" with typo
+  distance: 1,
+  limit: 10
+)
+
+# Fuzzy search with highlighted snippets
+{:ok, results} = Searcher.search_fuzzy_with_snippets(
+  searcher,
+  "content",
+  "elixr",
+  ["content"],
+  distance: 1,
+  max_snippet_chars: 150
+)
+
+# Transposition handling (character swaps count as 1 edit)
+{:ok, results} = Searcher.search_fuzzy(
+  searcher,
+  "title",
+  "elixer",  # "i" and "x" swapped
+  distance: 1,
+  transposition: true  # default
+)
+```
+
+**Performance Notes:**
+- **Distance=1**: ~2-10x slower than exact search (recommended for real-time)
+- **Distance=2**: ~5-50x slower than exact search (use for suggestions only)
+- Transposition cost enabled by default (more intuitive for users)
+
 ## Field Types
 
 | Type | Description | Example Use Case |
@@ -217,6 +290,7 @@ See the `examples/` directory for complete working examples:
 - `advanced_search_demo.exs` - Query parser with boolean operators
 - `highlighting_demo.exs` - Highlighted snippets and prefix search
 - `range_functions_demo.exs` - Range queries (QueryParser vs dedicated functions)
+- `fuzzy_search_demo.exs` - Fuzzy matching for typo tolerance
 - `complete_search_demo.exs` - Full feature showcase
 - `comparison_demo.exs` - Side-by-side comparison of search methods
 
@@ -266,6 +340,13 @@ Searcher.search_range_i64(searcher, "temperature", -10, 30)
 Searcher.search_range_f64(searcher, "price", 10.0, 100.0)
 ```
 
+**Fuzzy Search** - Error-tolerant matching with Levenshtein distance:
+```elixir
+Searcher.search_fuzzy(searcher, "title", "elixr", distance: 1)
+Searcher.search_fuzzy_prefix(searcher, "author", "jse", distance: 1)
+Searcher.search_fuzzy_with_snippets(searcher, "content", "elixr", ["content"])
+```
+
 ## Architecture
 
 ```
@@ -287,6 +368,8 @@ Elixir Application
 - Index creation: ~20-25ms per index
 - Query parsing: <0.1ms per query
 - Term search: O(log n) for term lookup
+- Fuzzy search (distance=1): ~2-10x slower than exact search
+- Fuzzy search (distance=2): ~5-50x slower than exact search
 - Snippet generation: ~2-5ms per document
 - Concurrent operations: Fully supported
 - Scales to millions of documents
@@ -304,10 +387,11 @@ mix test --cover
 mix test test/muninn/searcher_test.exs
 ```
 
-**Test Coverage:** 158 tests covering:
+**Test Coverage:** 175+ tests covering:
 - Schema and index operations
 - Document CRUD operations
-- All query types (term, boolean, phrase, prefix, range)
+- All query types (term, boolean, phrase, prefix, range, fuzzy)
+- Fuzzy search with distance levels (0-2), transposition handling
 - Range queries with different numeric types and boundary options
 - Snippet generation and highlighting
 - Concurrent operations
@@ -327,7 +411,7 @@ For detailed feature comparison and use cases, see [SEARCH_FEATURES.md](SEARCH_F
 
 ## Development Status
 
-**Current:** Phase 6 Complete - Range Queries & Tantivy 0.25 Upgrade
+**Current:** Phase 7 Complete - Fuzzy Matching and Typo Tolerance
 
 **Implemented:**
 - Schema definition and validation
@@ -336,14 +420,16 @@ For detailed feature comparison and use cases, see [SEARCH_FEATURES.md](SEARCH_F
 - Basic term search
 - Advanced query parser (field:value, AND/OR, phrases, ranges)
 - Range queries for all numeric types (u64, i64, f64)
+- Fuzzy search with Levenshtein distance (3 functions: fuzzy, fuzzy_prefix, fuzzy_with_snippets)
 - Highlighted snippets for search results
 - Prefix search for autocomplete
 - Transaction support (commit/rollback)
 - Upgraded to Tantivy 0.25
 
 **Roadmap:**
+- QueryParser integration for fuzzy syntax (`term~N`)
+- Advanced suggestions system ("did you mean?")
 - Faceted search and aggregations
-- Fuzzy matching and suggestions
 - Custom analyzers and tokenizers
 - Sorting and custom scoring
 

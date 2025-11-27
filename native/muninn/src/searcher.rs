@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::ops::Bound;
 use std::panic::RefUnwindSafe;
 use tantivy::collector::TopDocs;
-use tantivy::query::{BooleanQuery, Occur, PhraseQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
+use tantivy::query::{BooleanQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
 use tantivy::schema::FieldType;
 use tantivy::snippet::SnippetGenerator;
 use tantivy::{Searcher, TantivyDocument, Term};
@@ -453,6 +453,169 @@ pub fn searcher_search_range_f64<'a>(
     let range_query = RangeQuery::new(lower_bound, upper_bound);
 
     execute_query(env, searcher, &schema, &range_query, limit)
+}
+
+/// Performs a fuzzy search with Levenshtein distance
+pub fn searcher_search_fuzzy<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    term: String,
+    distance: u8,
+    transposition_cost_one: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    // Validate field exists
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    // Validate field is text type
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::Str(_)) {
+        return Err(format!(
+            "Field '{}' must be a text field. Fuzzy search only works on text fields.",
+            field_name
+        ));
+    }
+
+    // Validate distance
+    if distance > 2 {
+        return Err("Distance must be between 0 and 2".to_string());
+    }
+
+    // Create Tantivy fuzzy query
+    let tantivy_term = Term::from_field_text(field, &term);
+    let fuzzy_query = FuzzyTermQuery::new(tantivy_term, distance, transposition_cost_one);
+
+    // Execute and return results
+    execute_query(env, searcher, &schema, &fuzzy_query, limit)
+}
+
+/// Performs a fuzzy prefix search combining autocomplete with typo tolerance
+pub fn searcher_search_fuzzy_prefix<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    prefix: String,
+    distance: u8,
+    transposition_cost_one: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    // Validate field exists
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    // Validate field is text type
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::Str(_)) {
+        return Err(format!(
+            "Field '{}' must be a text field. Fuzzy prefix search only works on text fields.",
+            field_name
+        ));
+    }
+
+    // Validate distance
+    if distance > 2 {
+        return Err("Distance must be between 0 and 2".to_string());
+    }
+
+    // Create Tantivy fuzzy prefix query
+    let tantivy_term = Term::from_field_text(field, &prefix);
+    let fuzzy_query = FuzzyTermQuery::new_prefix(tantivy_term, distance, transposition_cost_one);
+
+    // Execute and return results
+    execute_query(env, searcher, &schema, &fuzzy_query, limit)
+}
+
+/// Performs fuzzy search with highlighted snippets
+pub fn searcher_search_fuzzy_with_snippets<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    term: String,
+    snippet_fields: Vec<String>,
+    distance: u8,
+    transposition_cost_one: bool,
+    max_snippet_chars: usize,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    // Validate field exists
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    // Validate field is text type
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::Str(_)) {
+        return Err(format!(
+            "Field '{}' must be a text field. Fuzzy search only works on text fields.",
+            field_name
+        ));
+    }
+
+    // Validate distance
+    if distance > 2 {
+        return Err("Distance must be between 0 and 2".to_string());
+    }
+
+    // Create Tantivy fuzzy query
+    let tantivy_term = Term::from_field_text(field, &term);
+    let fuzzy_query = FuzzyTermQuery::new(tantivy_term, distance, transposition_cost_one);
+
+    // Execute search
+    let top_docs = searcher
+        .search(&fuzzy_query, &TopDocs::with_limit(limit))
+        .map_err(|e| format!("Search failed: {}", e))?;
+
+    let total_hits = top_docs.len();
+    let mut hits = Vec::new();
+
+    // Create snippet generators for requested fields
+    let mut snippet_generators: HashMap<String, SnippetGenerator> = HashMap::new();
+    for snippet_field_name in &snippet_fields {
+        let snippet_field = schema
+            .get_field(snippet_field_name)
+            .map_err(|_| format!("Snippet field '{}' not found in schema", snippet_field_name))?;
+
+        let generator = SnippetGenerator::create(searcher, &fuzzy_query, snippet_field)
+            .map_err(|e| format!("Failed to create snippet generator: {}", e))?;
+
+        snippet_generators.insert(snippet_field_name.clone(), generator);
+    }
+
+    // Generate results with snippets
+    for (score, doc_address) in top_docs {
+        let doc: TantivyDocument = searcher
+            .doc(doc_address)
+            .map_err(|e| format!("Failed to retrieve document: {}", e))?;
+
+        let hit_map = document_to_hit_map_with_snippets(env, &schema, &doc, score, &snippet_generators);
+        hits.push(hit_map);
+    }
+
+    use rustler::types::map;
+    use rustler::Encoder;
+
+    let result_map = map::map_new(env)
+        .map_put("total_hits".encode(env), total_hits.encode(env))
+        .ok()
+        .unwrap()
+        .map_put("hits".encode(env), hits.encode(env))
+        .ok()
+        .unwrap();
+
+    Ok(result_map)
 }
 
 /// Helper function to execute a query and return results

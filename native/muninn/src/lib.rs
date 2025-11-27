@@ -160,6 +160,47 @@ fn searcher_search_range_f64<'a>(
     searcher::searcher_search_range_f64(env, searcher, field_name, lower, upper, lower_inclusive, upper_inclusive, limit)
 }
 
+#[rustler::nif]
+fn searcher_search_fuzzy<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    term: String,
+    distance: u8,
+    transposition_cost_one: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_fuzzy(env, searcher, field_name, term, distance, transposition_cost_one, limit)
+}
+
+#[rustler::nif]
+fn searcher_search_fuzzy_prefix<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    prefix: String,
+    distance: u8,
+    transposition_cost_one: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_fuzzy_prefix(env, searcher, field_name, prefix, distance, transposition_cost_one, limit)
+}
+
+#[rustler::nif]
+fn searcher_search_fuzzy_with_snippets<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    term: String,
+    snippet_fields: Vec<String>,
+    distance: u8,
+    transposition_cost_one: bool,
+    max_snippet_chars: usize,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_fuzzy_with_snippets(env, searcher, field_name, term, snippet_fields, distance, transposition_cost_one, max_snippet_chars, limit)
+}
+
 rustler::init!("Elixir.Muninn.Native", load = on_load);
 
 fn on_load(env: rustler::Env, _info: rustler::Term) -> bool {

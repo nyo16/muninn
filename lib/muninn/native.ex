@@ -81,4 +81,16 @@ defmodule Muninn.Native do
   @doc false
   def searcher_search_range_f64(_searcher, _field_name, _lower, _upper, _lower_inclusive, _upper_inclusive, _limit),
     do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_fuzzy(_searcher, _field_name, _term, _distance, _transposition_cost_one, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_fuzzy_prefix(_searcher, _field_name, _prefix, _distance, _transposition_cost_one, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_fuzzy_with_snippets(_searcher, _field_name, _term, _snippet_fields, _distance, _transposition_cost_one, _max_snippet_chars, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

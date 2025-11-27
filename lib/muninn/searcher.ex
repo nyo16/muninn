@@ -494,4 +494,192 @@ defmodule Muninn.Searcher do
       limit
     )
   end
+
+  @doc """
+  Performs fuzzy search for terms within a specified Levenshtein distance.
+
+  Fuzzy search is error-tolerant and matches documents containing similar terms,
+  making it ideal for handling typos and spelling variations. For example, searching
+  for "elixr" with distance=1 will match documents containing "elixir".
+
+  ## Parameters
+
+  - `searcher` - The searcher resource
+  - `field_name` - Name of the text field to search in
+  - `term` - The search term (may contain typos)
+  - `opts` - Keyword list of options:
+    - `:distance` - Maximum Levenshtein distance (0-2, default: 1)
+      - 0 = exact match only
+      - 1 = one character difference (recommended for most use cases)
+      - 2 = two character differences (slower, use for suggestions)
+    - `:transposition` - Count character swaps as single edit (default: true)
+      - true = "elixer" → "elixir" counts as 1 edit
+      - false = "elixer" → "elixir" counts as 2 edits (delete + insert)
+    - `:limit` - Maximum number of results (default: 10)
+
+  ## Returns
+
+  - `{:ok, results}` - Map with "total_hits" and "hits" array
+  - `{:error, reason}` - Error string if search fails
+
+  ## Examples
+
+      # Basic fuzzy search (handles common typos)
+      {:ok, results} = Searcher.search_fuzzy(searcher, "title", "elixr", distance: 1)
+
+      # More tolerant search (allows 2 character differences)
+      {:ok, results} = Searcher.search_fuzzy(searcher, "content", "phoneix", distance: 2)
+
+      # Exact transposition handling
+      {:ok, results} = Searcher.search_fuzzy(
+        searcher,
+        "author",
+        "progarmming",
+        distance: 1,
+        transposition: true
+      )
+
+      # Higher result limit
+      {:ok, results} = Searcher.search_fuzzy(
+        searcher,
+        "title",
+        "elixr",
+        distance: 1,
+        limit: 50
+      )
+
+  ## Performance Notes
+
+  - Distance=1: ~2-10x slower than exact search (recommended default)
+  - Distance=2: ~5-50x slower than exact search (use sparingly)
+  - Transposition=true is slightly faster than false
+  """
+  @spec search_fuzzy(t(), String.t(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_fuzzy(searcher, field_name, term, opts \\ [])
+      when is_binary(field_name) and is_binary(term) do
+    distance = Keyword.get(opts, :distance, 1)
+    transposition = Keyword.get(opts, :transposition, true)
+    limit = Keyword.get(opts, :limit, 10)
+
+    # Validate distance
+    unless distance in 0..2 do
+      {:error, "Distance must be between 0 and 2"}
+    else
+      Native.searcher_search_fuzzy(
+        searcher,
+        field_name,
+        term,
+        distance,
+        transposition,
+        limit
+      )
+    end
+  end
+
+  @doc """
+  Performs fuzzy prefix search combining autocomplete with typo tolerance.
+
+  Similar to `search_prefix/4` but allows for spelling errors in the prefix.
+  Useful for search-as-you-type with error tolerance.
+
+  ## Parameters
+
+  - `searcher` - The searcher resource
+  - `field_name` - Name of the text field to search in
+  - `prefix` - The prefix to match (may contain typos)
+  - `opts` - Same as `search_fuzzy/4` options
+
+  ## Examples
+
+      # Autocomplete with typo tolerance
+      {:ok, results} = Searcher.search_fuzzy_prefix(
+        searcher,
+        "title",
+        "pho",  # User typing "phoenix" but made a typo
+        distance: 1,
+        limit: 10
+      )
+  """
+  @spec search_fuzzy_prefix(t(), String.t(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_fuzzy_prefix(searcher, field_name, prefix, opts \\ [])
+      when is_binary(field_name) and is_binary(prefix) do
+    distance = Keyword.get(opts, :distance, 1)
+    transposition = Keyword.get(opts, :transposition, true)
+    limit = Keyword.get(opts, :limit, 10)
+
+    unless distance in 0..2 do
+      {:error, "Distance must be between 0 and 2"}
+    else
+      Native.searcher_search_fuzzy_prefix(
+        searcher,
+        field_name,
+        prefix,
+        distance,
+        transposition,
+        limit
+      )
+    end
+  end
+
+  @doc """
+  Performs fuzzy search with highlighted snippets showing matched terms.
+
+  Combines `search_fuzzy/4` with snippet generation for displaying context
+  around fuzzy matches.
+
+  ## Parameters
+
+  - `searcher` - The searcher resource
+  - `field_name` - Name of the text field to search in
+  - `term` - The search term (may contain typos)
+  - `snippet_fields` - List of field names to generate snippets from
+  - `opts` - Keyword list combining fuzzy and snippet options:
+    - `:distance` - Maximum Levenshtein distance (0-2, default: 1)
+    - `:transposition` - Count swaps as single edit (default: true)
+    - `:max_snippet_chars` - Maximum snippet length (default: 150)
+    - `:limit` - Maximum results (default: 10)
+
+  ## Examples
+
+      {:ok, results} = Searcher.search_fuzzy_with_snippets(
+        searcher,
+        "content",
+        "elixr",
+        ["content"],
+        distance: 1,
+        max_snippet_chars: 200,
+        limit: 10
+      )
+
+      # Access snippets
+      for hit <- results["hits"] do
+        IO.puts(hit["snippets"]["content"])  # "Learn about <b>Elixir</b>..."
+      end
+  """
+  @spec search_fuzzy_with_snippets(t(), String.t(), String.t(), [String.t()], keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_fuzzy_with_snippets(searcher, field_name, term, snippet_fields, opts \\ [])
+      when is_binary(field_name) and is_binary(term) and is_list(snippet_fields) do
+    distance = Keyword.get(opts, :distance, 1)
+    transposition = Keyword.get(opts, :transposition, true)
+    max_snippet_chars = Keyword.get(opts, :max_snippet_chars, 150)
+    limit = Keyword.get(opts, :limit, 10)
+
+    unless distance in 0..2 do
+      {:error, "Distance must be between 0 and 2"}
+    else
+      Native.searcher_search_fuzzy_with_snippets(
+        searcher,
+        field_name,
+        term,
+        snippet_fields,
+        distance,
+        transposition,
+        max_snippet_chars,
+        limit
+      )
+    end
+  end
 end
