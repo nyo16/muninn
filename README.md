@@ -1,11 +1,21 @@
-# Muninn
+<p align="center">
+  <img src="images/header.png" alt="Muninn" width="800">
+</p>
 
-[![CI](https://github.com/nyo16/muninn/actions/workflows/ci.yml/badge.svg)](https://github.com/nyo16/muninn/actions/workflows/ci.yml)
-[![Precomp NIFs](https://github.com/nyo16/muninn/actions/workflows/release.yml/badge.svg)](https://github.com/nyo16/muninn/actions/workflows/release.yml)
+<p align="center">
+  <strong>A fast, full-text search engine for Elixir, powered by <a href="https://github.com/quickwit-oss/tantivy">Tantivy</a></strong>
+</p>
 
-A fast, full-text search engine for Elixir, powered by [Tantivy](https://github.com/quickwit-oss/tantivy) (Rust).
+<p align="center">
+  <a href="https://github.com/nyo16/muninn/actions/workflows/ci.yml"><img src="https://github.com/nyo16/muninn/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/nyo16/muninn/actions/workflows/release.yml"><img src="https://github.com/nyo16/muninn/actions/workflows/release.yml/badge.svg" alt="Precomp NIFs"></a>
+  <a href="https://hex.pm/packages/muninn"><img src="https://img.shields.io/hexpm/v/muninn.svg" alt="Hex.pm"></a>
+  <a href="https://hexdocs.pm/muninn"><img src="https://img.shields.io/badge/docs-hexdocs-blue.svg" alt="Docs"></a>
+</p>
 
-Named after Odin's raven who gathers information from across the nine worlds.
+<p align="center">
+  <em>Named after Odin's raven who gathers information from across the nine worlds.</em>
+</p>
 
 ## Why "Muninn"?
 
