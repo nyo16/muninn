@@ -12,6 +12,7 @@ jobs:
     env:
       MIX_ENV: test
       MUNINN_BUILD: "true"
+      ImageOS: ubuntu24
 
     name: Elixir ${{ matrix.pair.elixir }} / OTP ${{ matrix.pair.otp }}
 
