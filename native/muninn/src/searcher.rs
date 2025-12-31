@@ -71,7 +71,7 @@ pub fn searcher_search_term<'a>(
 
     // Execute the search
     let top_docs = searcher
-        .search(&*query, &TopDocs::with_limit(limit))
+        .search(&*query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| format!("Search failed: {}", e))?;
 
     // Convert results to Elixir format
@@ -137,7 +137,7 @@ pub fn searcher_search_query<'a>(
 
     // Execute the search
     let top_docs = searcher
-        .search(&*query, &TopDocs::with_limit(limit))
+        .search(&*query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| format!("Search failed: {}", e))?;
 
     // Convert results to Elixir format
@@ -205,7 +205,7 @@ pub fn searcher_search_with_snippets<'a>(
 
     // Execute the search
     let top_docs = searcher
-        .search(&*query, &TopDocs::with_limit(limit))
+        .search(&*query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| format!("Search failed: {}", e))?;
 
     // Create snippet generators for requested fields
@@ -300,7 +300,7 @@ pub fn searcher_search_prefix<'a>(
 
     // Execute the search
     let top_docs = searcher
-        .search(&regex_query, &TopDocs::with_limit(limit))
+        .search(&regex_query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| format!("Search failed: {}", e))?;
 
     // Convert results to Elixir format
@@ -572,7 +572,7 @@ pub fn searcher_search_fuzzy_with_snippets<'a>(
 
     // Execute search
     let top_docs = searcher
-        .search(&fuzzy_query, &TopDocs::with_limit(limit))
+        .search(&fuzzy_query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| format!("Search failed: {}", e))?;
 
     let total_hits = top_docs.len();
@@ -625,7 +625,7 @@ fn execute_query<'a>(
     limit: usize,
 ) -> Result<rustler::Term<'a>, String> {
     let top_docs = searcher
-        .search(query, &TopDocs::with_limit(limit))
+        .search(query, &TopDocs::with_limit(limit).order_by_score())
         .map_err(|e| format!("Search failed: {}", e))?;
 
     let total_hits = top_docs.len();

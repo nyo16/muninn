@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2025-12-31
+
+### Changed
+- Upgraded to Tantivy 0.26.0 from git main branch (commit b11605f)
+- Updated Rust requirement to 1.92+ (rustler 0.37.2 requires Rust 1.91+)
+- Updated rustler to 0.37.2
+- Updated all Rust dependencies to latest compatible versions
+- Fixed TopDocs API usage for Tantivy 0.26.0 compatibility (added `.order_by_score()`)
+
 ## [0.4.0] - 2025-11-27
 
 ### Added
