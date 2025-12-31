@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2025-12-31
+
+### Fixed
+- Updated CI workflow to use Rust 1.92.0 (was 1.85.0)
+- Updated release workflow to explicitly use Rust 1.92.0 for precompiled binaries
+
 ## [0.5.0] - 2025-12-31
 
 ### Changed
