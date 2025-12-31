@@ -1,6 +1,6 @@
 [package]
 name = "muninn"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2021"
 
 [lib]
@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.37.0"
-tantivy = "0.25"
+tantivy = { git = "https://github.com/quickwit-oss/tantivy", rev = "b11605f045d3f8faf9324a7cc7a20bac41199948" }
 regex = "1.11"
 
 [features]
