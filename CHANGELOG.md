@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Updated CI workflow to use Rust 1.92.0 (was 1.85.0)
 - Updated release workflow to explicitly use Rust 1.92.0 for precompiled binaries
+- Updated macOS runners: aarch64-apple-darwin uses macos-14, x86_64-apple-darwin uses macos-13-large
 
 ## [0.5.0] - 2025-12-31
 
