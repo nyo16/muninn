@@ -48,6 +48,11 @@ jobs:
         run: |
           echo "PROJECT_VERSION=$(sed -n 's/.*@version "\([^"]*\)".*/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.92.0
+
       - name: Maybe add Rust flags for compilation
         shell: bash
         run: |
