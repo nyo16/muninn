@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2025-12-31
+
+### Fixed
+- Updated macOS runners for precompiled NIF builds (GitHub retired all macos-13 variants)
+  - aarch64-apple-darwin (Apple Silicon): macos-14
+  - x86_64-apple-darwin (Intel): macos-15-intel
+
 ## [0.5.1] - 2025-12-31
 
 ### Fixed
