@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2026-02-16
+
+### Changed
+- Updated Tantivy to latest main branch (commit 51f340f)
+  - Replaced HyperLogLogPlus with Apache DataSketches HLL for improved cardinality estimation
+  - Fixed intersection optimization bug in seek_into_the_danger_zone()
+  - Fixed union performance regression
+  - Aggregation collector refactoring (one per request instead of one per bucket)
+  - Updated dependencies: lru 0.16.3, lz4_flex 0.12, hashbrown 0.16.1
+
 ## [0.5.2] - 2025-12-31
 
 ### Fixed
