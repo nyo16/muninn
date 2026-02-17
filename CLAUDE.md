@@ -84,7 +84,7 @@ native/muninn/src/
 
 - Elixir ~> 1.18
 - Rust ~> 1.92 (rustler 0.37.2 requires Rust 1.91+)
-- Tantivy 0.26.0 (from git main branch, commit b11605f)
+- Tantivy 0.26.0 (from git main branch, commit 51f340f)
 
 ## Testing
 
