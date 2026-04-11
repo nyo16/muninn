@@ -37,15 +37,20 @@ This library embodies that spirit: it flies through your documents, indexes what
 
 - **Fast**: Rust-powered search via native NIFs
 - **Full-text search**: Text indexing with customizable tokenization
-- **Multiple field types**: text, u64, i64, f64, bool
-- **Flexible schemas**: Define stored and indexed fields
-- **Advanced queries**: Field-specific search, boolean operators, phrase matching, range queries
+- **Multiple field types**: text, u64, i64, f64, bool, bytes
+- **Custom tokenizers**: Per-field tokenizer support (`default`, `raw`, `en_stem`, `whitespace`)
+- **Flexible schemas**: Define stored, indexed, and fast fields
+- **Advanced queries**: Field-specific search, boolean operators, phrase matching, range queries, regex
 - **Range queries**: Numeric range filtering with flexible boundaries
 - **Fuzzy matching**: Error-tolerant search with Levenshtein distance for handling typos
+- **MoreLikeThis**: Find similar documents by term distribution
+- **Aggregations**: Terms, range, histogram buckets + avg, sum, stats, cardinality metrics with nesting
+- **Sort by field**: Order results by fast field value instead of relevance score
+- **Count queries**: Lightweight document counting without retrieval
 - **Highlighting**: HTML snippets with highlighted matching words
 - **Autocomplete**: Prefix search for typeahead functionality (with fuzzy support)
 - **Thread-safe**: Concurrent index operations supported
-- **Production-ready**: Comprehensive error handling and 175+ tests
+- **Production-ready**: Comprehensive error handling and 229+ tests
 
 ## Installation
 
@@ -61,7 +66,7 @@ end
 
 **Requirements:**
 - Elixir ~> 1.18
-- Rust ~> 1.85 (for compilation, Tantivy 0.25 requires Edition 2024)
+- Rust ~> 1.92 (for compilation, Tantivy 0.26 + Rustler 0.37.2 require Rust 1.91+)
 
 ## Quick Start
 
@@ -71,9 +76,11 @@ end
 alias Muninn.Schema
 
 schema = Schema.new()
-  |> Schema.add_text_field("title", stored: true, indexed: true)
+  |> Schema.add_text_field("title", stored: true, indexed: true, tokenizer: "en_stem")
   |> Schema.add_text_field("body", stored: true, indexed: true)
-  |> Schema.add_u64_field("views", stored: true, indexed: true)
+  |> Schema.add_text_field("category", stored: true, tokenizer: "raw", fast: true)
+  |> Schema.add_u64_field("views", stored: true, indexed: true, fast: true)
+  |> Schema.add_f64_field("price", stored: true, fast: true)
   |> Schema.add_bool_field("published", stored: true, indexed: true)
 ```
 
@@ -295,6 +302,135 @@ Handle spelling errors and typos automatically using Levenshtein distance:
 - **Distance=2**: ~5-50x slower than exact search (use for suggestions only)
 - Transposition cost enabled by default (more intuitive for users)
 
+### Regex Search
+
+Search with regular expressions on text fields:
+
+```elixir
+# Programmatic regex query
+{:ok, results} = Searcher.search_regex(searcher, "title", "elix.*", limit: 10)
+
+# Also supported via query parser syntax
+{:ok, results} = Searcher.search_query(searcher, "/elix.*/", ["title"])
+```
+
+### MoreLikeThis (Find Similar Documents)
+
+Find documents similar to a reference document by analyzing term distributions:
+
+```elixir
+{:ok, results} = Searcher.search_more_like_this(
+  searcher,
+  %{"title" => "Elixir programming", "body" => "Functional programming with Elixir"},
+  min_doc_freq: 1,
+  min_term_freq: 1,
+  max_query_terms: 25,
+  limit: 5
+)
+```
+
+### Count Queries
+
+Efficiently count matching documents without retrieving them:
+
+```elixir
+{:ok, count} = Searcher.count(searcher, "elixir AND phoenix", ["title", "body"])
+# Returns: {:ok, 42}
+```
+
+### Sort by Field Value
+
+Sort results by a fast field instead of relevance score:
+
+```elixir
+# Sort by price ascending
+{:ok, results} = Searcher.search_query_sorted(
+  searcher,
+  "category:electronics",
+  ["title"],
+  "price"
+)
+
+# Sort by views descending
+{:ok, results} = Searcher.search_query_sorted(
+  searcher,
+  "*",
+  ["title"],
+  "views",
+  reverse: true,
+  limit: 20
+)
+
+# Results include sort_value instead of score:
+# %{"sort_value" => 5000, "doc" => %{"title" => "Popular Item", ...}}
+```
+
+> **Note:** Sort fields must be numeric (u64, i64, f64) with `fast: true` in the schema.
+
+### Aggregations
+
+Compute analytics over search results using the aggregation framework:
+
+```elixir
+alias Muninn.Aggregation
+alias Muninn.Aggregation.{Bucket, Metric}
+
+# Simple metric aggregation
+aggs = Aggregation.new()
+  |> Aggregation.add("avg_price", Metric.avg("price"))
+  |> Aggregation.add("price_stats", Metric.stats("price"))
+
+{:ok, results} = Searcher.aggregate(searcher, "*", ["title"], aggs)
+# results["avg_price"]["value"] => 381.66
+# results["price_stats"] => %{"count" => 6, "min" => 15.0, "max" => 999.0, ...}
+
+# Terms aggregation (group by category)
+aggs = Aggregation.new()
+  |> Aggregation.add("by_category", Bucket.terms("category", size: 10))
+
+{:ok, results} = Searcher.aggregate(searcher, "*", ["title"], aggs)
+# results["by_category"]["buckets"] => [
+#   %{"key" => "electronics", "doc_count" => 3},
+#   %{"key" => "clothing", "doc_count" => 2},
+#   ...
+# ]
+
+# Nested aggregation (stats per category)
+aggs = Aggregation.new()
+  |> Aggregation.add("by_category",
+    Bucket.terms("category", size: 10)
+    |> Aggregation.sub("price_stats", Metric.stats("price"))
+  )
+
+# Range buckets
+aggs = Aggregation.new()
+  |> Aggregation.add("price_ranges",
+    Bucket.range("price", [
+      %{"to" => 50.0},
+      %{"from" => 50.0, "to" => 500.0},
+      %{"from" => 500.0}
+    ])
+  )
+
+# Histogram
+aggs = Aggregation.new()
+  |> Aggregation.add("price_hist", Bucket.histogram("price", 100.0))
+
+# Scoped to a query (only aggregate matching docs)
+{:ok, results} = Searcher.aggregate(
+  searcher,
+  "category:electronics",
+  ["title", "category"],
+  aggs
+)
+```
+
+> **Note:** Aggregated fields must have `fast: true` in the schema. For text field aggregation (e.g., terms), use `tokenizer: "raw"` with `fast: true`.
+
+**Available Bucket Aggregations:** `Bucket.terms/2`, `Bucket.range/2`, `Bucket.histogram/3`, `Bucket.filter/1`
+
+**Available Metric Aggregations:** `Metric.avg/1`, `Metric.sum/1`, `Metric.min/1`, `Metric.max/1`, `Metric.stats/1`, `Metric.count/1`, `Metric.cardinality/2`, `Metric.percentiles/2`
+
 ## Field Types
 
 | Type | Description | Example Use Case |
@@ -304,12 +440,15 @@ Handle spelling errors and typos automatically using Levenshtein distance:
 | `i64` | Signed 64-bit integers | Scores, offsets, differences |
 | `f64` | 64-bit floating point | Prices, ratings, coordinates |
 | `bool` | Boolean values | Flags, states (published, active) |
+| `bytes` | Arbitrary binary data | Embeddings, serialized data, hashes |
 
 **Field Options:**
 - `stored: true/false` - Store the original value (retrievable in search results)
 - `indexed: true/false` - Index the field for searching/filtering
+- `fast: true/false` - Enable columnar storage (required for sorting and aggregations)
+- `tokenizer: "name"` - Tokenizer for text fields: `"default"`, `"raw"`, `"en_stem"`, `"whitespace"`
 
-**Defaults:** `stored: false`, `indexed: true`
+**Defaults:** `stored: false`, `indexed: true`, `fast: false`, `tokenizer: nil` (uses `"default"`)
 
 ## Examples
 
@@ -320,6 +459,7 @@ See the `examples/` directory for complete working examples:
 - `highlighting_demo.exs` - Highlighted snippets and prefix search
 - `range_functions_demo.exs` - Range queries (QueryParser vs dedicated functions)
 - `fuzzy_search_demo.exs` - Fuzzy matching for typo tolerance
+- `aggregation_demo.exs` - Aggregations, sorting, and analytics
 - `complete_search_demo.exs` - Full feature showcase
 - `comparison_demo.exs` - Side-by-side comparison of search methods
 
@@ -332,49 +472,35 @@ mix run examples/complete_search_demo.exs
 
 ### Core Modules
 
-- `Muninn.Schema` - Define index schema with field types
+- `Muninn.Schema` - Define index schema with field types and options
 - `Muninn.Index` - Create and open indices
 - `Muninn.IndexWriter` - Add, update documents, commit/rollback
 - `Muninn.IndexReader` - Read access to index
-- `Muninn.Searcher` - Execute search queries
+- `Muninn.Searcher` - Execute search queries, sorting, counting, and aggregations
 - `Muninn.Query` - Build search queries
+- `Muninn.Aggregation` - Builder DSL for aggregation requests
+- `Muninn.Aggregation.Bucket` - Bucket aggregation builders (terms, range, histogram, filter)
+- `Muninn.Aggregation.Metric` - Metric aggregation builders (avg, sum, min, max, stats, etc.)
 
 ### Search Methods
 
-**Basic Term Search** - Simple, direct term matching:
-```elixir
-query = Query.term("field", "value")
-Searcher.search(searcher, query, limit: 10)
-```
-
-**Query Parser** - Natural syntax with boolean operators:
-```elixir
-Searcher.search_query(searcher, "field:value AND other", ["field", "other"])
-```
-
-**With Snippets** - Highlighted search results:
-```elixir
-Searcher.search_with_snippets(searcher, query, search_fields, snippet_fields, opts)
-```
-
-**Prefix Search** - Autocomplete functionality:
-```elixir
-Searcher.search_prefix(searcher, "field", "prefix", limit: 10)
-```
-
-**Range Queries** - Numeric filtering with flexible boundaries:
-```elixir
-Searcher.search_range_u64(searcher, "views", 100, 1000, inclusive: :both)
-Searcher.search_range_i64(searcher, "temperature", -10, 30)
-Searcher.search_range_f64(searcher, "price", 10.0, 100.0)
-```
-
-**Fuzzy Search** - Error-tolerant matching with Levenshtein distance:
-```elixir
-Searcher.search_fuzzy(searcher, "title", "elixr", distance: 1)
-Searcher.search_fuzzy_prefix(searcher, "author", "jse", distance: 1)
-Searcher.search_fuzzy_with_snippets(searcher, "content", "elixr", ["content"])
-```
+| Method | Description |
+|--------|-------------|
+| `Searcher.search/3` | Term query — direct term matching |
+| `Searcher.search_query/4` | Query parser — boolean operators, phrase queries, field-specific |
+| `Searcher.search_with_snippets/5` | Query parser + highlighted HTML snippets |
+| `Searcher.search_prefix/4` | Prefix matching for autocomplete |
+| `Searcher.search_range_u64/5` | Numeric range query (u64) |
+| `Searcher.search_range_i64/5` | Numeric range query (i64) |
+| `Searcher.search_range_f64/5` | Numeric range query (f64) |
+| `Searcher.search_fuzzy/4` | Fuzzy matching with Levenshtein distance |
+| `Searcher.search_fuzzy_prefix/4` | Fuzzy prefix matching for autocomplete with typo tolerance |
+| `Searcher.search_fuzzy_with_snippets/5` | Fuzzy matching + highlighted snippets |
+| `Searcher.search_regex/4` | Regex pattern matching on text fields |
+| `Searcher.search_more_like_this/3` | Find similar documents by term distribution |
+| `Searcher.search_query_sorted/5` | Query with results sorted by fast field value |
+| `Searcher.count/3` | Count matching documents without retrieval |
+| `Searcher.aggregate/5` | Execute aggregations over matching documents |
 
 ## Architecture
 
@@ -416,12 +542,15 @@ mix test --cover
 mix test test/muninn/searcher_test.exs
 ```
 
-**Test Coverage:** 175+ tests covering:
-- Schema and index operations
+**Test Coverage:** 229+ tests covering:
+- Schema and index operations (including bytes field, custom tokenizers, fast fields)
 - Document CRUD operations
-- All query types (term, boolean, phrase, prefix, range, fuzzy)
+- All query types (term, boolean, phrase, prefix, range, fuzzy, regex, MoreLikeThis)
 - Fuzzy search with distance levels (0-2), transposition handling
 - Range queries with different numeric types and boundary options
+- Sort by field value (ascending/descending)
+- Count queries
+- Aggregations (terms, range, histogram, stats, nested)
 - Snippet generation and highlighting
 - Concurrent operations
 - Edge cases and error handling
@@ -439,27 +568,35 @@ View at `doc/index.html`
 
 ## Development Status
 
-**Current:** Phase 7 Complete - Fuzzy Matching and Typo Tolerance
+**Current:** Phase 8 Complete - Tantivy 0.26.0 Features
 
 **Implemented:**
 - Schema definition and validation
 - Index creation and management
 - Document indexing with batch operations
 - Basic term search
-- Advanced query parser (field:value, AND/OR, phrases, ranges)
+- Advanced query parser (field:value, AND/OR, phrases, ranges, regex)
 - Range queries for all numeric types (u64, i64, f64)
-- Fuzzy search with Levenshtein distance (3 functions: fuzzy, fuzzy_prefix, fuzzy_with_snippets)
+- Fuzzy search with Levenshtein distance (fuzzy, fuzzy_prefix, fuzzy_with_snippets)
 - Highlighted snippets for search results
 - Prefix search for autocomplete
+- Regex search on text fields
+- MoreLikeThis (find similar documents)
+- Count queries (lightweight document counting)
+- Sort by fast field value (ascending/descending)
+- Aggregations (terms, range, histogram, filter buckets + all metric types)
+- Custom tokenizers (default, raw, en_stem, whitespace)
+- Bytes field type for binary data
+- Fast fields for columnar storage
 - Transaction support (commit/rollback)
-- Upgraded to Tantivy 0.25
+- Upgraded to Tantivy 0.26.0 (crates.io)
 
 **Roadmap:**
 - QueryParser integration for fuzzy syntax (`term~N`)
 - Advanced suggestions system ("did you mean?")
-- Faceted search and aggregations
-- Custom analyzers and tokenizers
-- Sorting and custom scoring
+- Document deletion and updates
+- Date field type
+- Custom scoring and boosting
 
 ## License
 
