@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2026-04-11
+
+### Changed
+- Switched Tantivy dependency from git (commit 51f340f) to crates.io release 0.26.0
+  - No longer pinned to a specific commit; uses the official published release
+
+### Tantivy 0.26.0 Highlights (since previous git pin)
+- **Bugfixes**: Fixed phrase query prefixed with `*`, vint buffer overflow during index creation, integer overflow in `ExpUnrolledLinkedList` for large datasets, integer overflow in segment sorting and merge policy truncation, merging of intermediate aggregation results, deduplicate doc counts in term aggregation for multi-valued fields, lenient elastic range queries with trailing closing parentheses
+- **Features**: Filter aggregation, composite aggregation, include/exclude filtering for term aggregations, regex support in query parser, TermQuery fallback for non-indexed fast fields, fast field support for Bytes values, natural-order-with-none-highest in TopDocs ordering, stemming behind feature flag
+- **Performance**: High cardinality aggregation speed improvements, saturated posting list optimization, lazy scorers, union performance improvements, seek_danger for efficient intersections
+
 ## [0.5.3] - 2026-02-16
 
 ### Changed

@@ -2,11 +2,13 @@ use rustler::{Env, ResourceArc};
 use std::collections::HashMap;
 use std::ops::Bound;
 use std::panic::RefUnwindSafe;
-use tantivy::collector::TopDocs;
-use tantivy::query::{FuzzyTermQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery};
-use tantivy::schema::FieldType;
+use tantivy::collector::{Count, TopDocs};
+use tantivy::query::{
+    FuzzyTermQuery, MoreLikeThisQuery, Query, QueryParser, RangeQuery, RegexQuery, TermQuery,
+};
+use tantivy::schema::{FieldType, OwnedValue};
 use tantivy::snippet::SnippetGenerator;
-use tantivy::{Searcher, TantivyDocument, Term};
+use tantivy::{Order, Searcher, TantivyDocument, Term};
 
 use crate::reader::ReaderResource;
 
@@ -691,7 +693,13 @@ fn document_to_hit_map<'a>(
                 tantivy::schema::OwnedValue::Bool(b) => {
                     doc_fields.insert(field_name, b.encode(env));
                 }
-                _ => {} // Skip unsupported types
+                tantivy::schema::OwnedValue::Bytes(ref b) => {
+                    let mut binary = rustler::NewBinary::new(env, b.len());
+                    binary.as_mut_slice().copy_from_slice(b);
+                    let bin: rustler::Binary = binary.into();
+                    doc_fields.insert(field_name, bin.encode(env));
+                }
+                _ => {}
             }
         }
     }
@@ -747,6 +755,12 @@ fn document_to_hit_map_with_snippets<'a>(
                 tantivy::schema::OwnedValue::Bool(b) => {
                     doc_fields.insert(field_name, b.encode(env));
                 }
+                tantivy::schema::OwnedValue::Bytes(ref b) => {
+                    let mut binary = rustler::NewBinary::new(env, b.len());
+                    binary.as_mut_slice().copy_from_slice(b);
+                    let bin: rustler::Binary = binary.into();
+                    doc_fields.insert(field_name, bin.encode(env));
+                }
                 _ => {} // Skip unsupported types
             }
         }
@@ -777,6 +791,330 @@ fn document_to_hit_map_with_snippets<'a>(
         .map_put("snippets".encode(env), snippets_elixir_map)
         .ok()
         .unwrap()
+}
+
+/// Counts documents matching a query without retrieving them
+pub fn searcher_count(
+    searcher_res: ResourceArc<SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+) -> Result<u64, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    let mut fields = Vec::new();
+    for field_name in &default_fields {
+        let field = schema
+            .get_field(field_name)
+            .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+        fields.push(field);
+    }
+
+    if fields.is_empty() {
+        return Err("At least one default field must be provided".to_string());
+    }
+
+    let query_parser = QueryParser::for_index(searcher.index(), fields);
+    let query = query_parser
+        .parse_query(&query_string)
+        .map_err(|e| format!("Failed to parse query '{}': {}", query_string, e))?;
+
+    let count = searcher
+        .search(&*query, &Count)
+        .map_err(|e| format!("Count failed: {}", e))?;
+
+    Ok(count as u64)
+}
+
+/// Performs a regex query on a specific field
+pub fn searcher_search_regex<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    field_name: String,
+    pattern: String,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    let field = schema
+        .get_field(&field_name)
+        .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+
+    let field_entry = schema.get_field_entry(field);
+    if !matches!(field_entry.field_type(), FieldType::Str(_)) {
+        return Err(format!(
+            "Field '{}' is not a text field. Regex search only works on text fields.",
+            field_name
+        ));
+    }
+
+    let regex_query = RegexQuery::from_pattern(&pattern, field)
+        .map_err(|e| format!("Invalid regex pattern '{}': {}", pattern, e))?;
+
+    execute_query(env, searcher, &schema, &regex_query, limit)
+}
+
+/// Performs a MoreLikeThis query to find similar documents
+pub fn searcher_search_more_like_this<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    document_fields: HashMap<String, String>,
+    min_doc_freq: u64,
+    min_term_freq: usize,
+    max_doc_freq: u64,
+    min_word_length: usize,
+    max_word_length: usize,
+    max_query_terms: usize,
+    boost_factor: f32,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    if document_fields.is_empty() {
+        return Err("Document fields map cannot be empty".to_string());
+    }
+
+    // Convert field name/value pairs to (Field, Vec<OwnedValue>)
+    let mut doc_fields_vec: Vec<(tantivy::schema::Field, Vec<OwnedValue>)> = Vec::new();
+    for (field_name, text_value) in &document_fields {
+        let field = schema
+            .get_field(field_name)
+            .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+        doc_fields_vec.push((field, vec![OwnedValue::Str(text_value.clone())]));
+    }
+
+    // Build the MoreLikeThis query
+    let mut builder = MoreLikeThisQuery::builder()
+        .with_min_doc_frequency(min_doc_freq)
+        .with_min_term_frequency(min_term_freq)
+        .with_max_query_terms(max_query_terms)
+        .with_boost_factor(boost_factor);
+
+    if max_doc_freq < u64::MAX {
+        builder = builder.with_max_doc_frequency(max_doc_freq);
+    }
+
+    if min_word_length > 0 {
+        builder = builder.with_min_word_length(min_word_length);
+    }
+
+    if max_word_length > 0 {
+        builder = builder.with_max_word_length(max_word_length);
+    }
+
+    let query = builder.with_document_fields(doc_fields_vec);
+
+    execute_query(env, searcher, &schema, &query, limit)
+}
+
+/// Performs a search sorted by a fast field value instead of relevance score
+pub fn searcher_search_query_sorted<'a>(
+    env: rustler::Env<'a>,
+    searcher_res: ResourceArc<SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+    sort_field: String,
+    reverse: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    let searcher = &searcher_res.searcher;
+    let schema = searcher.index().schema();
+
+    // Parse the query
+    let mut fields = Vec::new();
+    for field_name in &default_fields {
+        let field = schema
+            .get_field(field_name)
+            .map_err(|_| format!("Field '{}' not found in schema", field_name))?;
+        fields.push(field);
+    }
+
+    if fields.is_empty() {
+        return Err("At least one default field must be provided".to_string());
+    }
+
+    let query_parser = QueryParser::for_index(searcher.index(), fields);
+    let query = query_parser
+        .parse_query(&query_string)
+        .map_err(|e| format!("Failed to parse query '{}': {}", query_string, e))?;
+
+    // Resolve sort field
+    let sort_field_ref = schema
+        .get_field(&sort_field)
+        .map_err(|_| format!("Sort field '{}' not found in schema", sort_field))?;
+
+    let field_entry = schema.get_field_entry(sort_field_ref);
+    let order = if reverse { Order::Desc } else { Order::Asc };
+
+    use rustler::types::map;
+    use rustler::Encoder;
+
+    // Dispatch based on field type
+    match field_entry.field_type() {
+        FieldType::U64(_) => {
+            let collector =
+                TopDocs::with_limit(limit).order_by_fast_field::<u64>(&sort_field, order);
+            let top_docs = searcher
+                .search(&*query, &collector)
+                .map_err(|e| format!("Search failed: {}", e))?;
+
+            let total_hits = top_docs.len();
+            let mut hits = Vec::new();
+
+            for (sort_value, doc_address) in top_docs {
+                let doc: TantivyDocument = searcher
+                    .doc(doc_address)
+                    .map_err(|e| format!("Failed to retrieve document: {}", e))?;
+
+                let mut doc_fields: HashMap<String, rustler::Term> = HashMap::new();
+                build_doc_fields(env, &schema, &doc, &mut doc_fields);
+                let doc_map = doc_fields.encode(env);
+
+                let hit = map::map_new(env)
+                    .map_put("sort_value".encode(env), sort_value.encode(env))
+                    .ok()
+                    .unwrap()
+                    .map_put("doc".encode(env), doc_map)
+                    .ok()
+                    .unwrap();
+                hits.push(hit);
+            }
+
+            let result = map::map_new(env)
+                .map_put("total_hits".encode(env), total_hits.encode(env))
+                .ok()
+                .unwrap()
+                .map_put("hits".encode(env), hits.encode(env))
+                .ok()
+                .unwrap();
+            Ok(result)
+        }
+        FieldType::I64(_) => {
+            let collector =
+                TopDocs::with_limit(limit).order_by_fast_field::<i64>(&sort_field, order);
+            let top_docs = searcher
+                .search(&*query, &collector)
+                .map_err(|e| format!("Search failed: {}", e))?;
+
+            let total_hits = top_docs.len();
+            let mut hits = Vec::new();
+
+            for (sort_value, doc_address) in top_docs {
+                let doc: TantivyDocument = searcher
+                    .doc(doc_address)
+                    .map_err(|e| format!("Failed to retrieve document: {}", e))?;
+
+                let mut doc_fields: HashMap<String, rustler::Term> = HashMap::new();
+                build_doc_fields(env, &schema, &doc, &mut doc_fields);
+                let doc_map = doc_fields.encode(env);
+
+                let hit = map::map_new(env)
+                    .map_put("sort_value".encode(env), sort_value.encode(env))
+                    .ok()
+                    .unwrap()
+                    .map_put("doc".encode(env), doc_map)
+                    .ok()
+                    .unwrap();
+                hits.push(hit);
+            }
+
+            let result = map::map_new(env)
+                .map_put("total_hits".encode(env), total_hits.encode(env))
+                .ok()
+                .unwrap()
+                .map_put("hits".encode(env), hits.encode(env))
+                .ok()
+                .unwrap();
+            Ok(result)
+        }
+        FieldType::F64(_) => {
+            let collector =
+                TopDocs::with_limit(limit).order_by_fast_field::<f64>(&sort_field, order);
+            let top_docs = searcher
+                .search(&*query, &collector)
+                .map_err(|e| format!("Search failed: {}", e))?;
+
+            let total_hits = top_docs.len();
+            let mut hits = Vec::new();
+
+            for (sort_value, doc_address) in top_docs {
+                let doc: TantivyDocument = searcher
+                    .doc(doc_address)
+                    .map_err(|e| format!("Failed to retrieve document: {}", e))?;
+
+                let mut doc_fields: HashMap<String, rustler::Term> = HashMap::new();
+                build_doc_fields(env, &schema, &doc, &mut doc_fields);
+                let doc_map = doc_fields.encode(env);
+
+                let hit = map::map_new(env)
+                    .map_put("sort_value".encode(env), sort_value.encode(env))
+                    .ok()
+                    .unwrap()
+                    .map_put("doc".encode(env), doc_map)
+                    .ok()
+                    .unwrap();
+                hits.push(hit);
+            }
+
+            let result = map::map_new(env)
+                .map_put("total_hits".encode(env), total_hits.encode(env))
+                .ok()
+                .unwrap()
+                .map_put("hits".encode(env), hits.encode(env))
+                .ok()
+                .unwrap();
+            Ok(result)
+        }
+        _ => Err(format!(
+            "Sort field '{}' must be a numeric type (u64, i64, f64)",
+            sort_field
+        )),
+    }
+}
+
+/// Helper to extract document fields into a HashMap for Elixir encoding
+fn build_doc_fields<'a>(
+    env: rustler::Env<'a>,
+    schema: &tantivy::schema::Schema,
+    doc: &TantivyDocument,
+    doc_fields: &mut HashMap<String, rustler::Term<'a>>,
+) {
+    use rustler::Encoder;
+
+    for field in schema.fields() {
+        let field_name = field.1.name().to_string();
+        let values: Vec<_> = doc.get_all(field.0).collect();
+
+        if let Some(value) = values.first() {
+            let owned_value: tantivy::schema::OwnedValue = (*value).into();
+            match owned_value {
+                tantivy::schema::OwnedValue::Str(s) => {
+                    doc_fields.insert(field_name, s.as_str().encode(env));
+                }
+                tantivy::schema::OwnedValue::U64(n) => {
+                    doc_fields.insert(field_name, n.encode(env));
+                }
+                tantivy::schema::OwnedValue::I64(n) => {
+                    doc_fields.insert(field_name, n.encode(env));
+                }
+                tantivy::schema::OwnedValue::F64(n) => {
+                    doc_fields.insert(field_name, n.encode(env));
+                }
+                tantivy::schema::OwnedValue::Bool(b) => {
+                    doc_fields.insert(field_name, b.encode(env));
+                }
+                tantivy::schema::OwnedValue::Bytes(ref b) => {
+                    let mut binary = rustler::NewBinary::new(env, b.len());
+                    binary.as_mut_slice().copy_from_slice(b);
+                    let bin: rustler::Binary = binary.into();
+                    doc_fields.insert(field_name, bin.encode(env));
+                }
+                _ => {}
+            }
+        }
+    }
 }
 
 pub fn load(env: Env) -> bool {

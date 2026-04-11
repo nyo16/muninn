@@ -471,9 +471,9 @@ dependencies = [
 
 [[package]]
 name = "lz4_flex"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab6473172471198271ff72e9379150e9dfd70d8e533e0752a27e515b48dd375e"
+checksum = "db9a0d582c2874f68138a16ce1867e0ffde6c0bb0a0df85e1f36d04146db488a"
 
 [[package]]
 name = "measure_time"
@@ -507,10 +507,11 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "muninn"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "regex",
  "rustler",
+ "serde_json",
  "tantivy",
 ]
 
@@ -532,9 +533,9 @@ dependencies = [
 
 [[package]]
 name = "num-conv"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
+checksum = "c6673768db2d862beb9b39a78fdcb1a69439615d5794a1be50caa9bc92c81967"
 
 [[package]]
 name = "num-traits"
@@ -569,7 +570,8 @@ dependencies = [
 [[package]]
 name = "ownedbytes"
 version = "0.9.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fbd56f7631767e61784dc43f8580f403f4475bd4aaa4da003e6295e1bab4a7e"
 dependencies = [
  "stable_deref_trait",
 ]
@@ -798,9 +800,9 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "sketches-ddsketch"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1e9a774a6c28142ac54bb25d25562e6bcf957493a184f15ad4eebccb23e410a"
+checksum = "05e40b6cf54d988dc1a2223531b969c9a9e30906ad90ef64890c27b4bfbb46ea"
 dependencies = [
  "serde",
 ]
@@ -843,7 +845,8 @@ dependencies = [
 [[package]]
 name = "tantivy"
 version = "0.26.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "778da245841522199d512d19511b041425d8cff3a8f262b4e1516fceb050289a"
 dependencies = [
  "aho-corasick",
  "arc-swap",
@@ -894,16 +897,18 @@ dependencies = [
 
 [[package]]
 name = "tantivy-bitpacker"
-version = "0.9.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fed3d674429bcd2de5d0a6d1aa5495fed8afd9c5ecce993019caf7615f53fa4"
 dependencies = [
  "bitpacking",
 ]
 
 [[package]]
 name = "tantivy-columnar"
-version = "0.6.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c57166f5bcfd478f370ab8445afb4678dce44801fa5ce5c451aaf8595583c5dc"
 dependencies = [
  "downcast-rs",
  "fastdivide",
@@ -917,8 +922,9 @@ dependencies = [
 
 [[package]]
 name = "tantivy-common"
-version = "0.10.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbf10915aa75da3c3b0d58b58853d2e889efbaf32d4982a4c3715dde6bba23e5"
 dependencies = [
  "async-trait",
  "byteorder",
@@ -940,8 +946,9 @@ dependencies = [
 
 [[package]]
 name = "tantivy-query-grammar"
-version = "0.25.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfadb8526b6da90704feb293b0701a6aae62ea14983143344be2dc5ce30f1d82"
 dependencies = [
  "fnv",
  "nom",
@@ -952,8 +959,9 @@ dependencies = [
 
 [[package]]
 name = "tantivy-sstable"
-version = "0.6.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a2cfc3ac5164cbadc28965ffb145a8f47582a60ae5897859ad8d4316596c606"
 dependencies = [
  "futures-util",
  "itertools",
@@ -965,8 +973,9 @@ dependencies = [
 
 [[package]]
 name = "tantivy-stacker"
-version = "0.6.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6cbb051742da9d53ca9e8fff43a9b10e319338b24e2c0e15d0372df19ffeb951"
 dependencies = [
  "murmurhash32",
  "tantivy-common",
@@ -974,8 +983,9 @@ dependencies = [
 
 [[package]]
 name = "tantivy-tokenizer-api"
-version = "0.6.0"
-source = "git+https://github.com/quickwit-oss/tantivy?rev=51f340f83d06680fc2e231481fa10115f3bc2b7b#51f340f83d06680fc2e231481fa10115f3bc2b7b"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eac258c2c6390673f2685813afeeafcb8c4e0ee7de8dd3fc46838dcc37263f98"
 dependencies = [
  "serde",
 ]
@@ -1015,30 +1025,30 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.44"
+version = "0.3.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91e7d9e3bb61134e77bde20dd4825b97c010155709965fedf0f49bb138e52a9d"
+checksum = "743bd48c283afc0388f9b8827b976905fb217ad9e647fae3a379a9283c4def2c"
 dependencies = [
  "deranged",
  "itoa",
  "num-conv",
  "powerfmt",
- "serde",
+ "serde_core",
  "time-core",
  "time-macros",
 ]
 
 [[package]]
 name = "time-core"
-version = "0.1.6"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40868e7c1d2f0b8d73e4a8c7f0ff63af4f6d19be117e90bd73eb1d62cf831c6b"
+checksum = "7694e1cfe791f8d31026952abf09c69ca6f6fa4e1a1229e18988f06a04a12dca"
 
 [[package]]
 name = "time-macros"
-version = "0.2.24"
+version = "0.2.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30cfb0125f12d9c277f35663a0a33f8c30190f4e4574868a330595412d34ebf3"
+checksum = "2e70e4c5a0e0a8a4823ad65dfe1a6930e4f4d756dcd9dd7939022b5e8c501215"
 dependencies = [
  "num-conv",
  "time-core",

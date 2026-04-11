@@ -9,10 +9,12 @@ defmodule Muninn.Schema.Field do
           type: field_type(),
           name: String.t(),
           stored: boolean(),
-          indexed: boolean()
+          indexed: boolean(),
+          fast: boolean(),
+          tokenizer: String.t() | nil
         }
 
-  defstruct [:type, :name, stored: false, indexed: true]
+  defstruct [:type, :name, stored: false, indexed: true, fast: false, tokenizer: nil]
 
   @doc """
   Creates a new field.
@@ -21,6 +23,10 @@ defmodule Muninn.Schema.Field do
 
     * `:stored` - Whether to store the field value (default: `false`)
     * `:indexed` - Whether to index the field (default: `true`)
+    * `:fast` - Whether to enable fast field (columnar) storage (default: `false`).
+      Required for sorting and aggregations on numeric fields.
+    * `:tokenizer` - Tokenizer to use for text fields (default: `nil`, uses `"default"`).
+      Built-in options: `"default"`, `"raw"`, `"en_stem"`, `"whitespace"`.
 
   """
   @spec new(field_type(), String.t(), keyword()) :: t()
@@ -29,7 +35,9 @@ defmodule Muninn.Schema.Field do
       type: type,
       name: name,
       stored: Keyword.get(opts, :stored, false),
-      indexed: Keyword.get(opts, :indexed, true)
+      indexed: Keyword.get(opts, :indexed, true),
+      fast: Keyword.get(opts, :fast, false),
+      tokenizer: Keyword.get(opts, :tokenizer, nil)
     }
   end
 
@@ -42,7 +50,9 @@ defmodule Muninn.Schema.Field do
       type: Atom.to_string(field.type),
       name: field.name,
       stored: field.stored,
-      indexed: field.indexed
+      indexed: field.indexed,
+      fast: field.fast,
+      tokenizer: field.tokenizer || "default"
     }
   end
 end
