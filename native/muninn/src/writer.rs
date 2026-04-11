@@ -66,6 +66,11 @@ pub fn writer_add_document(
                         tantivy_doc.add_bool(field, bool_val);
                     }
                 }
+                FieldType::Bytes(_) => {
+                    if let Ok(bin) = value.decode::<rustler::Binary>() {
+                        tantivy_doc.add_bytes(field, bin.as_slice());
+                    }
+                }
                 _ => {
                     // Unsupported field type, skip
                 }

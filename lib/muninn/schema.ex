@@ -147,6 +147,29 @@ defmodule Muninn.Schema do
   end
 
   @doc """
+  Adds a bytes (binary) field to the schema.
+
+  ## Options
+
+    * `:stored` - Whether to store the field value (default: `false`)
+    * `:indexed` - Whether to index the field (default: `true`)
+    * `:fast` - Whether to enable fast field storage (default: `false`)
+
+  ## Examples
+
+      iex> schema = Muninn.Schema.new()
+      iex> schema = Muninn.Schema.add_bytes_field(schema, "payload", stored: true)
+      iex> hd(schema.fields).type
+      :bytes
+
+  """
+  @spec add_bytes_field(t(), String.t(), keyword()) :: t()
+  def add_bytes_field(%__MODULE__{fields: fields} = schema, name, opts \\ []) do
+    field = Field.new(:bytes, name, opts)
+    %{schema | fields: fields ++ [field]}
+  end
+
+  @doc """
   Validates the schema.
 
   Returns `:ok` if valid, or `{:error, reason}` if invalid.

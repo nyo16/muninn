@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2026-04-11
+
+### Changed
+- Switched Tantivy dependency from git (commit 51f340f) to crates.io release 0.26.0
+- Extended internal FieldDef tuple from 4 to 6 elements (added fast, tokenizer)
+
+### Added
+- **Bytes field type**: `Schema.add_bytes_field/3` for binary data storage and retrieval
+- **Custom tokenizers**: Per-field tokenizer option for text fields (`default`, `raw`, `en_stem`, `whitespace`)
+- **Fast fields**: `fast: true` option on numeric/bool/text fields for columnar storage
+- **Count collector**: `Searcher.count/3` for lightweight document counting without retrieval
+- **Regex queries**: `Searcher.search_regex/4` for programmatic regex pattern matching on text fields
+- **MoreLikeThis queries**: `Searcher.search_more_like_this/3` for finding similar documents by term distribution
+- **Sort by field value**: `Searcher.search_query_sorted/5` for sorting results by fast field instead of BM25 score
+- **Aggregations**: Full aggregation framework with JSON pass-through NIF
+  - `Searcher.aggregate/5` for executing aggregations over search results
+  - `Muninn.Aggregation` builder DSL with `new/0`, `add/3`, `sub/3`
+  - `Muninn.Aggregation.Bucket` — terms, range, histogram, filter bucket aggregations
+  - `Muninn.Aggregation.Metric` — avg, sum, min, max, stats, count, cardinality, percentiles
+
+### Tantivy 0.26.0 Highlights (since previous git pin)
+- **Bugfixes**: Fixed phrase query prefixed with `*`, vint buffer overflow during index creation, integer overflow in `ExpUnrolledLinkedList` for large datasets, integer overflow in segment sorting and merge policy truncation, merging of intermediate aggregation results, deduplicate doc counts in term aggregation for multi-valued fields, lenient elastic range queries with trailing closing parentheses
+- **Features**: Filter aggregation, composite aggregation, include/exclude filtering for term aggregations, regex support in query parser, TermQuery fallback for non-indexed fast fields, fast field support for Bytes values, natural-order-with-none-highest in TopDocs ordering, stemming behind feature flag
+- **Performance**: High cardinality aggregation speed improvements, saturated posting list optimization, lazy scorers, union performance improvements, seek_danger for efficient intersections
+
 ## [0.5.3] - 2026-02-16
 
 ### Changed
