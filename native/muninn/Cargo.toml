@@ -1,6 +1,6 @@
 [package]
 name = "muninn"
-version = "0.1.0"
+version = "0.5.4"
 edition = "2021"
 
 [lib]
@@ -9,8 +9,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rustler = "0.37.0"
-tantivy = "0.25"
+tantivy = "0.26.0"
 regex = "1.11"
+serde_json = "1"
 
 [features]
 default = ["nif_version_2_15"]

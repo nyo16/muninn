@@ -13,6 +13,7 @@ mod atoms {
     }
 }
 
+mod aggregation;
 mod index;
 mod reader;
 mod schema;
@@ -273,6 +274,86 @@ fn searcher_search_fuzzy_with_snippets<'a>(
         max_snippet_chars,
         limit,
     )
+}
+
+#[rustler::nif]
+fn searcher_count(
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+) -> Result<u64, String> {
+    searcher::searcher_count(searcher, query_string, default_fields)
+}
+
+#[rustler::nif]
+fn searcher_search_regex<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    field_name: String,
+    pattern: String,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_regex(env, searcher, field_name, pattern, limit)
+}
+
+#[rustler::nif]
+fn searcher_search_more_like_this<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    document_fields: std::collections::HashMap<String, String>,
+    min_doc_freq: u64,
+    min_term_freq: usize,
+    max_doc_freq: u64,
+    min_word_length: usize,
+    max_word_length: usize,
+    max_query_terms: usize,
+    boost_factor: f32,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_more_like_this(
+        env,
+        searcher,
+        document_fields,
+        min_doc_freq,
+        min_term_freq,
+        max_doc_freq,
+        min_word_length,
+        max_word_length,
+        max_query_terms,
+        boost_factor,
+        limit,
+    )
+}
+
+#[rustler::nif]
+fn searcher_search_query_sorted<'a>(
+    env: rustler::Env<'a>,
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+    sort_field: String,
+    reverse: bool,
+    limit: usize,
+) -> Result<rustler::Term<'a>, String> {
+    searcher::searcher_search_query_sorted(
+        env,
+        searcher,
+        query_string,
+        default_fields,
+        sort_field,
+        reverse,
+        limit,
+    )
+}
+
+#[rustler::nif(schedule = "DirtyCpu")]
+fn searcher_aggregate(
+    searcher: rustler::ResourceArc<searcher::SearcherResource>,
+    query_string: String,
+    default_fields: Vec<String>,
+    aggs_json: String,
+) -> Result<String, String> {
+    aggregation::searcher_aggregate(searcher, query_string, default_fields, aggs_json)
 }
 
 rustler::init!("Elixir.Muninn.Native", load = on_load);

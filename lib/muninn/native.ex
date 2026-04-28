@@ -187,4 +187,42 @@ defmodule Muninn.Native do
         _limit
       ),
       do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_count(_searcher, _query_string, _default_fields),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_regex(_searcher, _field_name, _pattern, _limit),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_more_like_this(
+        _searcher,
+        _document_fields,
+        _min_doc_freq,
+        _min_term_freq,
+        _max_doc_freq,
+        _min_word_length,
+        _max_word_length,
+        _max_query_terms,
+        _boost_factor,
+        _limit
+      ),
+      do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_search_query_sorted(
+        _searcher,
+        _query_string,
+        _default_fields,
+        _sort_field,
+        _reverse,
+        _limit
+      ),
+      do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc false
+  def searcher_aggregate(_searcher, _query_string, _default_fields, _aggs_json),
+    do: :erlang.nif_error(:nif_not_loaded)
 end

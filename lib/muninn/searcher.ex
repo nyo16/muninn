@@ -682,4 +682,206 @@ defmodule Muninn.Searcher do
       )
     end
   end
+
+  @doc """
+  Counts documents matching a query without retrieving them.
+
+  This is more efficient than a full search when you only need the count.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `query_string` - The query string with natural syntax
+    * `default_fields` - List of field names to search when no field is specified
+
+  ## Examples
+
+      {:ok, count} = Muninn.Searcher.count(searcher, "elixir", ["title", "content"])
+
+  """
+  @spec count(t(), String.t(), list(String.t())) ::
+          {:ok, non_neg_integer()} | {:error, String.t()}
+  def count(searcher, query_string, default_fields)
+      when is_binary(query_string) and is_list(default_fields) do
+    Native.searcher_count(searcher, query_string, default_fields)
+  end
+
+  @doc """
+  Performs a regex search on a specific field.
+
+  Uses Tantivy's regex engine (based on `tantivy-fst`). Note that regex patterns
+  match against indexed (lowercased, tokenized) terms.
+
+  The query parser also supports `/regex/` syntax via `search_query/4`.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `field_name` - The text field to search in
+    * `pattern` - The regex pattern
+    * `opts` - Keyword list of options:
+      - `:limit` - Maximum number of results (default: 10)
+
+  ## Examples
+
+      {:ok, results} = Muninn.Searcher.search_regex(searcher, "title", "elix.*")
+
+  """
+  @spec search_regex(t(), String.t(), String.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_regex(searcher, field_name, pattern, opts \\ [])
+      when is_binary(field_name) and is_binary(pattern) do
+    limit = Keyword.get(opts, :limit, 10)
+    Native.searcher_search_regex(searcher, field_name, pattern, limit)
+  end
+
+  @doc """
+  Finds documents similar to the provided document fields.
+
+  Uses Tantivy's MoreLikeThis query to find documents with similar term distributions.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `document_fields` - A map of field name to text value representing the reference document
+    * `opts` - Keyword list of options:
+      - `:min_doc_freq` - Ignore terms appearing in fewer docs (default: 1)
+      - `:min_term_freq` - Ignore terms less frequent than this (default: 1)
+      - `:max_doc_freq` - Ignore terms in more docs than this (default: `:unlimited`)
+      - `:min_word_length` - Minimum word length (default: 0, no minimum)
+      - `:max_word_length` - Maximum word length (default: 0, no maximum)
+      - `:max_query_terms` - Maximum terms in the generated query (default: 25)
+      - `:boost_factor` - Score boost factor (default: 1.0)
+      - `:limit` - Maximum results (default: 10)
+
+  ## Examples
+
+      {:ok, results} = Muninn.Searcher.search_more_like_this(
+        searcher,
+        %{"title" => "Elixir programming", "content" => "Functional programming with Elixir"},
+        min_doc_freq: 1,
+        min_term_freq: 1,
+        limit: 5
+      )
+
+  """
+  @spec search_more_like_this(t(), map(), keyword()) :: {:ok, map()} | {:error, String.t()}
+  def search_more_like_this(searcher, document_fields, opts \\ [])
+      when is_map(document_fields) do
+    min_doc_freq = Keyword.get(opts, :min_doc_freq, 1)
+    min_term_freq = Keyword.get(opts, :min_term_freq, 1)
+
+    max_doc_freq =
+      case Keyword.get(opts, :max_doc_freq, :unlimited) do
+        :unlimited -> 18_446_744_073_709_551_615
+        val -> val
+      end
+
+    min_word_length = Keyword.get(opts, :min_word_length, 0)
+    max_word_length = Keyword.get(opts, :max_word_length, 0)
+    max_query_terms = Keyword.get(opts, :max_query_terms, 25)
+    boost_factor = Keyword.get(opts, :boost_factor, 1.0)
+    limit = Keyword.get(opts, :limit, 10)
+
+    Native.searcher_search_more_like_this(
+      searcher,
+      document_fields,
+      min_doc_freq,
+      min_term_freq,
+      max_doc_freq,
+      min_word_length,
+      max_word_length,
+      max_query_terms,
+      boost_factor,
+      limit
+    )
+  end
+
+  @doc """
+  Executes a search sorted by a fast field value instead of relevance score.
+
+  Requires the sort field to be a numeric type (u64, i64, f64) with `fast: true`
+  in the schema.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `query_string` - The query string with natural syntax
+    * `default_fields` - List of field names to search when no field is specified
+    * `sort_field` - Name of the fast field to sort by
+    * `opts` - Keyword list of options:
+      - `:reverse` - Sort descending when `true` (default: `false` for ascending)
+      - `:limit` - Maximum number of results (default: 10)
+
+  ## Returns
+
+  Results include `"sort_value"` (the fast field value) instead of `"score"`.
+
+  ## Examples
+
+      {:ok, results} = Muninn.Searcher.search_query_sorted(
+        searcher,
+        "*",
+        ["title"],
+        "price",
+        reverse: true,
+        limit: 10
+      )
+
+  """
+  @spec search_query_sorted(t(), String.t(), list(String.t()), String.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def search_query_sorted(searcher, query_string, default_fields, sort_field, opts \\ [])
+      when is_binary(query_string) and is_list(default_fields) and is_binary(sort_field) do
+    limit = Keyword.get(opts, :limit, 10)
+    reverse = Keyword.get(opts, :reverse, false)
+
+    Native.searcher_search_query_sorted(
+      searcher,
+      query_string,
+      default_fields,
+      sort_field,
+      reverse,
+      limit
+    )
+  end
+
+  @doc """
+  Executes aggregations over documents matching a query.
+
+  Uses Tantivy's aggregation framework. Aggregated fields must have `fast: true`
+  in the schema.
+
+  ## Parameters
+
+    * `searcher` - The searcher to use
+    * `query_string` - Query to scope which documents are aggregated (use `"*"` for all)
+    * `default_fields` - Default fields for the query parser
+    * `aggregations` - Aggregation request as a map (from builder DSL) or JSON string
+    * `opts` - Reserved for future options
+
+  ## Examples
+
+      aggs = %{
+        "avg_price" => %{"avg" => %{"field" => "price"}}
+      }
+
+      {:ok, results} = Muninn.Searcher.aggregate(searcher, "*", ["title"], aggs)
+
+  """
+  @spec aggregate(t(), String.t(), list(String.t()), map() | String.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def aggregate(searcher, query_string, default_fields, aggregations, _opts \\ [])
+      when is_binary(query_string) and is_list(default_fields) do
+    aggs_json =
+      case aggregations do
+        json when is_binary(json) -> json
+        map when is_map(map) -> Jason.encode!(map)
+      end
+
+    case Native.searcher_aggregate(searcher, query_string, default_fields, aggs_json) do
+      {:ok, result_json} -> {:ok, Jason.decode!(result_json)}
+      {:error, _} = error -> error
+    end
+  end
 end

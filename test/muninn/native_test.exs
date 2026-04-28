@@ -6,8 +6,8 @@ defmodule Muninn.NativeTest do
   describe "schema_build/1" do
     test "builds a schema from field list" do
       fields = [
-        {"title", "text", true, true},
-        {"body", "text", true, false}
+        {"title", "text", true, true, false, "default"},
+        {"body", "text", true, false, false, "default"}
       ]
 
       schema_resource = Native.schema_build(fields)
@@ -25,8 +25,8 @@ defmodule Muninn.NativeTest do
   describe "schema_num_fields/1" do
     test "returns number of fields in schema" do
       fields = [
-        {"field1", "text", true, true},
-        {"field2", "text", false, true}
+        {"field1", "text", true, true, false, "default"},
+        {"field2", "text", false, true, false, "default"}
       ]
 
       schema = Native.schema_build(fields)
@@ -43,7 +43,7 @@ defmodule Muninn.NativeTest do
     test "counts many fields correctly" do
       fields =
         for i <- 1..10 do
-          {"field_#{i}", "text", true, true}
+          {"field_#{i}", "text", true, true, false, "default"}
         end
 
       schema = Native.schema_build(fields)
@@ -57,7 +57,7 @@ defmodule Muninn.NativeTest do
 
       on_exit(fn -> File.rm_rf!(path) end)
 
-      fields = [{"title", "text", true, true}]
+      fields = [{"title", "text", true, true, false, "default"}]
 
       assert {:ok, index} = Native.index_create(path, fields)
       assert is_reference(index)
@@ -71,7 +71,7 @@ defmodule Muninn.NativeTest do
       on_exit(fn -> File.rm_rf!(path) end)
 
       # Create first
-      fields = [{"field", "text", true, true}]
+      fields = [{"field", "text", true, true, false, "default"}]
       {:ok, _} = Native.index_create(path, fields)
 
       # Then open

@@ -26,3 +26,6 @@ muninn-*.tar
 /priv/native/*.so
 /priv/native/*.dll
 /priv/native/*.dylib
+
+# macOS
+.DS_Store

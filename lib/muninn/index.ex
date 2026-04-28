@@ -48,10 +48,11 @@ defmodule Muninn.Index do
   @spec create(String.t(), Schema.t()) :: {:ok, t()} | {:error, atom()}
   def create(path, %Schema{} = schema) do
     with :ok <- Schema.validate(schema) do
-      # Convert schema to list of tuples {name, type, stored, indexed}
+      # Convert schema to list of tuples {name, type, stored, indexed, fast, tokenizer}
       fields =
         Enum.map(schema.fields, fn field ->
-          {field.name, Atom.to_string(field.type), field.stored, field.indexed}
+          {field.name, Atom.to_string(field.type), field.stored, field.indexed, field.fast,
+           field.tokenizer || "default"}
         end)
 
       Native.index_create(path, fields)
