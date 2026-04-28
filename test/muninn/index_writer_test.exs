@@ -265,6 +265,151 @@ defmodule Muninn.IndexWriterTest do
     end
   end
 
+  describe "delete_term/3" do
+    alias Muninn.{IndexReader, Searcher}
+    alias Muninn.Query.Term, as: TermQuery
+
+    test "deletes documents matching a text term", %{test_path: test_path} do
+      schema =
+        Schema.new()
+        |> Schema.add_text_field("id", stored: true, indexed: true)
+        |> Schema.add_text_field("body", stored: true, indexed: true)
+
+      {:ok, index} = Index.create(test_path, schema)
+
+      :ok =
+        IndexWriter.add_documents(index, [
+          %{"id" => "doc1", "body" => "hello"},
+          %{"id" => "doc2", "body" => "world"}
+        ])
+
+      :ok = IndexWriter.commit(index)
+
+      {:ok, reader} = IndexReader.new(index)
+      {:ok, searcher} = Searcher.new(reader)
+
+      assert {:ok, %{"total_hits" => 1}} =
+               Searcher.search(searcher, %TermQuery{field: "id", value: "doc1"}, limit: 10)
+
+      :ok = IndexWriter.delete_term(index, "id", "doc1")
+      :ok = IndexWriter.commit(index)
+
+      {:ok, reader} = IndexReader.new(index)
+      {:ok, searcher} = Searcher.new(reader)
+
+      assert {:ok, %{"total_hits" => 0}} =
+               Searcher.search(searcher, %TermQuery{field: "id", value: "doc1"}, limit: 10)
+
+      assert {:ok, %{"total_hits" => 1}} =
+               Searcher.search(searcher, %TermQuery{field: "id", value: "doc2"}, limit: 10)
+    end
+
+    test "deletes all documents matching the term", %{test_path: test_path} do
+      schema =
+        Schema.new()
+        |> Schema.add_text_field("category", stored: true, indexed: true)
+        |> Schema.add_text_field("title", stored: true, indexed: true)
+
+      {:ok, index} = Index.create(test_path, schema)
+
+      :ok =
+        IndexWriter.add_documents(index, [
+          %{"category" => "draft", "title" => "A"},
+          %{"category" => "draft", "title" => "B"},
+          %{"category" => "published", "title" => "C"}
+        ])
+
+      :ok = IndexWriter.commit(index)
+      :ok = IndexWriter.delete_term(index, "category", "draft")
+      :ok = IndexWriter.commit(index)
+
+      {:ok, reader} = IndexReader.new(index)
+      {:ok, searcher} = Searcher.new(reader)
+
+      assert {:ok, %{"total_hits" => 0}} =
+               Searcher.search(
+                 searcher,
+                 %TermQuery{field: "category", value: "draft"},
+                 limit: 10
+               )
+
+      assert {:ok, %{"total_hits" => 1}} =
+               Searcher.search(
+                 searcher,
+                 %TermQuery{field: "category", value: "published"},
+                 limit: 10
+               )
+    end
+
+    test "delete then re-add same term (incremental refresh pattern)", %{test_path: test_path} do
+      schema =
+        Schema.new()
+        |> Schema.add_text_field("id", stored: true, indexed: true)
+        |> Schema.add_text_field("body", stored: true, indexed: true)
+
+      {:ok, index} = Index.create(test_path, schema)
+
+      :ok = IndexWriter.add_document(index, %{"id" => "doc1", "body" => "old content"})
+      :ok = IndexWriter.commit(index)
+
+      :ok = IndexWriter.delete_term(index, "id", "doc1")
+      :ok = IndexWriter.add_document(index, %{"id" => "doc1", "body" => "new content"})
+      :ok = IndexWriter.commit(index)
+
+      {:ok, reader} = IndexReader.new(index)
+      {:ok, searcher} = Searcher.new(reader)
+
+      assert {:ok, %{"total_hits" => 1, "hits" => [hit]}} =
+               Searcher.search(searcher, %TermQuery{field: "id", value: "doc1"}, limit: 10)
+
+      body = hit["doc"]["body"]
+      assert body == ["new content"] or body == "new content"
+    end
+
+    test "delete on uncommitted writer is queued and applied at commit",
+         %{test_path: test_path} do
+      schema =
+        Schema.new()
+        |> Schema.add_text_field("id", stored: true, indexed: true)
+
+      {:ok, index} = Index.create(test_path, schema)
+
+      :ok = IndexWriter.add_document(index, %{"id" => "ghost"})
+      :ok = IndexWriter.delete_term(index, "id", "ghost")
+      :ok = IndexWriter.commit(index)
+
+      {:ok, reader} = IndexReader.new(index)
+      {:ok, searcher} = Searcher.new(reader)
+
+      assert {:ok, %{"total_hits" => 0}} =
+               Searcher.search(searcher, %TermQuery{field: "id", value: "ghost"}, limit: 10)
+    end
+
+    test "delete by u64 term", %{test_path: test_path} do
+      schema =
+        Schema.new()
+        |> Schema.add_u64_field("id", stored: true, indexed: true)
+        |> Schema.add_text_field("body", stored: true)
+
+      {:ok, index} = Index.create(test_path, schema)
+
+      :ok = IndexWriter.add_document(index, %{"id" => 42, "body" => "answer"})
+      :ok = IndexWriter.add_document(index, %{"id" => 43, "body" => "next"})
+      :ok = IndexWriter.commit(index)
+
+      assert :ok = IndexWriter.delete_term(index, "id", 42)
+      :ok = IndexWriter.commit(index)
+    end
+
+    test "returns error for unknown field", %{test_path: test_path} do
+      schema = Schema.new() |> Schema.add_text_field("id", stored: true, indexed: true)
+      {:ok, index} = Index.create(test_path, schema)
+
+      assert {:error, reason} = IndexWriter.delete_term(index, "nope", "x")
+      assert reason =~ "not found"
+    end
+  end
+
   describe "real-world scenarios" do
     test "e-commerce product indexing", %{test_path: test_path} do
       schema =

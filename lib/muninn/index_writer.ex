@@ -158,4 +158,46 @@ defmodule Muninn.IndexWriter do
       error -> error
     end
   end
+
+  @doc """
+  Deletes all documents matching a (field, value) term.
+
+  Tantivy marks the matching documents as deleted; the delete becomes
+  visible to searches after the next `commit/1`. Useful for incremental
+  refresh: delete docs whose key matches `value`, then re-add the new
+  versions in the same transaction.
+
+  Supports text, u64, i64, and bool fields. f64 is not supported (Tantivy
+  has no stable term encoding for floats).
+
+  ## Parameters
+
+    * `index` - The index to delete from
+    * `field_name` - Name of the indexed field to match against
+    * `value` - The value to match (string / integer / boolean)
+
+  ## Returns
+
+    * `:ok` - Delete queued (visible after `commit/1`)
+    * `{:error, reason}` - Failed (e.g. field not found, unsupported type)
+
+  ## Examples
+
+      :ok = Muninn.IndexWriter.add_document(index, %{"id" => "doc-1", "body" => "hello"})
+      :ok = Muninn.IndexWriter.commit(index)
+
+      :ok = Muninn.IndexWriter.delete_term(index, "id", "doc-1")
+      :ok = Muninn.IndexWriter.commit(index)
+      # "doc-1" no longer searchable
+
+  """
+  @spec delete_term(reference(), String.t(), String.t() | integer() | boolean()) ::
+          :ok | {:error, String.t()}
+  def delete_term(index, field_name, value) when is_binary(field_name) do
+    case Native.writer_delete_term(index, field_name, value) do
+      {:ok, _} -> :ok
+      :ok -> :ok
+      error -> error
+    end
+  end
 end
