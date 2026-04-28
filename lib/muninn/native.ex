@@ -81,6 +81,10 @@ defmodule Muninn.Native do
   @doc false
   def writer_rollback(_index), do: :erlang.nif_error(:nif_not_loaded)
 
+  @doc false
+  def writer_delete_term(_index, _field_name, _value),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   ## Reader functions
 
   @doc false

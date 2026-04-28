@@ -65,6 +65,15 @@ fn writer_rollback(index: rustler::ResourceArc<index::IndexResource>) -> Result<
 }
 
 #[rustler::nif]
+fn writer_delete_term(
+    index: rustler::ResourceArc<index::IndexResource>,
+    field_name: String,
+    value: rustler::Term,
+) -> Result<(), String> {
+    writer::writer_delete_term(index, field_name, value)
+}
+
+#[rustler::nif]
 fn reader_new(
     index: rustler::ResourceArc<index::IndexResource>,
 ) -> Result<rustler::ResourceArc<reader::ReaderResource>, String> {
