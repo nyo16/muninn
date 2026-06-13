@@ -59,7 +59,7 @@ Add `muninn` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:muninn, "~> 0.4.0"}
+    {:muninn, "~> 0.5.5"}
   ]
 end
 ```
