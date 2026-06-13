@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2026-06-13
+
+### Changed
+- Updated Tantivy from 0.26.0 to 0.26.1 (crates.io)
+  - Aggregation memory accounting fix: composite/parent-bucket collectors now measure only the active bucket instead of summing across all buckets
+  - Minor aggregation performance improvements (inlining)
+  - No public API changes
+
 ## [0.5.4] - 2026-04-11
 
 ### Changed
