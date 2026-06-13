@@ -21,14 +21,14 @@ jobs:
         include:
           - pair:
               elixir: 1.18.4
-              otp: "26.2"
-          - pair:
-              elixir: 1.18.4
               otp: "27.3"
           - pair:
               elixir: 1.19.3
               otp: "28.1.1"
             lint: lint
+          - pair:
+              elixir: 1.20.1
+              otp: "29.0.2"
 
     steps:
       - uses: actions/checkout@v6
