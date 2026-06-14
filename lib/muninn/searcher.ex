@@ -114,6 +114,10 @@ defmodule Muninn.Searcher do
     * `{:ok, results}` - Search results with total_hits and hits
     * `{:error, reason}` - Search or parse failed
 
+  > Note: `total_hits` is the number of hits returned in this response — capped by
+  > `:limit` and equal to `length(results["hits"])`, not the total number of
+  > matching documents. Use `count/3` for the full match count regardless of limit.
+
   ## Examples
 
       # Search for "elixir" in title and content fields
@@ -183,6 +187,10 @@ defmodule Muninn.Searcher do
 
     * `{:ok, results}` - Search results with snippets
     * `{:error, reason}` - Search or parse failed
+
+  > Note: `total_hits` is the number of hits returned in this response — capped by
+  > `:limit` and equal to `length(results["hits"])`, not the total number of
+  > matching documents. Use `count/3` for the full match count regardless of limit.
 
   Result format includes an additional `"snippets"` map with HTML-highlighted snippets:
 
@@ -274,6 +282,10 @@ defmodule Muninn.Searcher do
 
     * `{:ok, results}` - Search results with total_hits and hits
     * `{:error, reason}` - Search failed
+
+  > Note: `total_hits` is the number of hits returned in this response — capped by
+  > `:limit` and equal to `length(results["hits"])`, not the total number of
+  > matching documents. Use `count/3` for the full match count regardless of limit.
 
   ## Examples
 
